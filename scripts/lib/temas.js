@@ -127,7 +127,9 @@ export const TIPOS = {
   lei: 'Projeto de lei',
   pec: 'Emenda à Constituição',
   decreto: 'Decreto legislativo ou resolução',
-  emenda: 'Emenda a projeto',
+  emenda: 'Emenda ou substitutivo',
+  parecer: 'Parecer como relator',
+  destaque: 'Destaque ou recurso',
   fiscalizacao: 'Pedido de informação e fiscalização',
   requerimento: 'Requerimento',
   indicacao: 'Indicação ao Executivo',
@@ -144,7 +146,9 @@ export function tipoDe(sigla = '', natureza = '', categoria = '') {
   if (/^(PL|PLP|PLS|PLC|PLN|PLV)$/.test(s) || /^projeto de lei/.test(n)) return 'lei';
   if (/^(PDL|PDC|PDS|PRC|PRS|PR)$/.test(s) || /decreto legislativo|projeto de resolucao/.test(n)) return 'decreto';
   if (/^(EM|EMC|EMP|EMA|EMR|EMS|ESB|EMD|EMO|EMRP|EAG|ERD|SBT|SBE|SSP|EMENDA)/.test(s) || /^emenda|substitutivo/.test(n)) return 'emenda';
+  if (/^(PRL|PRLP|PRLE|PAR|PPP|PRV|REL|RLP|PEP|PRO|PRR|VTS)$/.test(s) || /^parecer|relatorio|voto em separado/.test(n)) return 'parecer';
+  if (/^(DTQ|DVT|REC|RCM|REM|DEN)$/.test(s) || /^destaque|^recurso/.test(n)) return 'destaque';
   if (/^(MOC|MOÇ)/.test(s) || /^mocao/.test(n)) return 'mocao';
-  if (/^(REQ|RQS|RQN|RQC|RI|RIC)$/.test(s) || /^requerimento/.test(n)) return 'requerimento';
+  if (/^(REQ|RQS|RQN|RQC|RI|RIC|RCP|RQA|RQP)$/.test(s) || /^requerimento/.test(n)) return 'requerimento';
   return 'outro';
 }

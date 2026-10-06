@@ -5,6 +5,8 @@ import { temaDe, tipoDe } from './temas.js';
  * @param {Array<{sigla,natureza,numero,ano,ementa,palavras_chave,categoria,status,data,url}>} lista
  * @param {boolean} manterLista guarda a lista detalhada (só para quem é de SP)
  */
+export const siglasSemTipo = new Map();
+
 export function resumirProposicoes(lista, manterLista = false) {
   const r = {
     total: lista.length,
@@ -24,6 +26,7 @@ export function resumirProposicoes(lista, manterLista = false) {
   for (const p of lista) {
     const tipo = tipoDe(p.sigla, p.natureza, p.categoria);
     r.por_tipo[tipo] = (r.por_tipo[tipo] || 0) + 1;
+    if (tipo === 'outro') siglasSemTipo.set(`${p.sigla} (${p.natureza || ''})`, (siglasSemTipo.get(`${p.sigla} (${p.natureza || ''})`) || 0) + 1);
 
     let tema = null;
     if (p.categoria === 'normativa') {

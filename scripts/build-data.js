@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { calcularScores, ranquear, pesosDosTemas } from './lib/score.js';
 import { ROTULO_TEMA, TIPOS } from './lib/temas.js';
+import { siglasSemTipo } from './lib/aggregate.js';
 import { gerarAmostra } from './sample-data.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -146,6 +147,7 @@ async function main() {
   }
 
   gravar(path.join(OUT, 'latest.json'), resultado);
+  console.log('Tipos não mapeados (top 25):', JSON.stringify([...siglasSemTipo].sort((a, b) => b[1] - a[1]).slice(0, 25)));
   const semScore = resultado.parlamentares.filter((p) => p.score.total == null).length;
   console.log(`\nPronto: ${resultado.parlamentares.length} parlamentares de SP (${semScore} sem score). Saída em public/data/`);
   const falhas = Object.entries(resultado.casas).filter(([, c]) => c.status !== 'ok');
