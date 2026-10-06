@@ -110,7 +110,7 @@ export async function coletarSenado(cfg, hoje = new Date()) {
       const situacao = p.situacaoAtual || p.situacao || '';
       const tramitando = /^s/i.test(p.tramitando || '');
       lista.push({
-        sigla, numero: p.numero || m[2], ano: p.ano || m[3], ementa, categoria,
+        sigla, natureza: p.tipoDocumento || '', numero: p.numero || m[2], ano: p.ano || m[3], ementa, categoria,
         status: situacao ? statusPorTexto(situacao) : tramitando ? 'andamento' : 'arquivada',
         data: (p.dataApresentacao || '').slice(0, 10),
         url: p.codigoMateria ? `https://www25.senado.leg.br/web/atividade/materias/-/materia/${p.codigoMateria}` : null,

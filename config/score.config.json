@@ -1,23 +1,29 @@
 {
   "_comentario": "Pesos e parâmetros do score. Os pesos não precisam somar 100: o score normaliza pelos componentes disponíveis. Para criar um critério novo, adicione-o aqui e implemente o cálculo em scripts/lib/score.js (função extratores).",
-  "versao_metodologia": "0.1",
+  "versao_metodologia": "0.2",
   "componentes": {
     "assiduidade": {
-      "peso": 25,
+      "peso": 20,
       "rotulo": "Assiduidade",
       "descricao": "Presença em sessões deliberativas do plenário (Câmara e ALESP) ou participação em votações nominais (Senado), contando só o período em que a pessoa estava em exercício.",
       "direcao": "maior_melhor"
     },
+    "agenda": {
+      "peso": 20,
+      "rotulo": "Relevância da agenda",
+      "descricao": "Soma dos temas das proposições normativas, cada uma com o peso do seu tema. Temas prioritários somam mais; simbólicas e homenagens (nome de via, data comemorativa, feriado, título, utilidade pública) tiram pontos. Escala logarítmica.",
+      "direcao": "maior_melhor"
+    },
     "producao": {
-      "peso": 15,
+      "peso": 10,
       "rotulo": "Produção legislativa",
-      "descricao": "Proposições normativas de autoria (PL, PLP, PEC, PDL etc.), excluindo honoríficas como nomes de vias, datas comemorativas e títulos de cidadania. Escala logarítmica: a 50ª proposta vale menos que a 5ª.",
+      "descricao": "Proposições normativas de autoria (PL, PLP, PEC, PDL etc.), excluindo as simbólicas. Escala logarítmica: a 50ª proposta vale menos que a 5ª.",
       "direcao": "maior_melhor"
     },
     "efetividade": {
-      "peso": 20,
+      "peso": 15,
       "rotulo": "Efetividade",
-      "descricao": "Taxa de proposições substantivas aprovadas pela casa ou transformadas em norma, suavizada para quem tem poucas propostas (5 propostas 'fantasma' na média da casa).",
+      "descricao": "Taxa de proposições não simbólicas aprovadas pela casa ou transformadas em norma, suavizada para quem tem poucas propostas (5 propostas “fantasma” na média da casa).",
       "direcao": "maior_melhor"
     },
     "fiscalizacao": {
@@ -27,13 +33,13 @@
       "direcao": "maior_melhor"
     },
     "custo_cota": {
-      "peso": 15,
+      "peso": 12,
       "rotulo": "Economia na cota",
       "descricao": "Gasto médio mensal com a cota parlamentar (CEAP, CEAPS ou despesas de gabinete da ALESP). Quem gasta menos que os pares pontua mais.",
       "direcao": "menor_melhor"
     },
     "custo_pessoal": {
-      "peso": 10,
+      "peso": 8,
       "rotulo": "Enxugamento do gabinete",
       "descricao": "Número de assessores lotados no gabinete. Quem mantém gabinete menor pontua mais. Comparado só entre parlamentares de SP da mesma casa.",
       "direcao": "menor_melhor"
@@ -71,5 +77,46 @@
   "_fontes_valores": {
     "verba_gabinete_mensal": "camara.leg.br/deputados/{id}/verba-gabinete (2026)",
     "salario_mensal": "Conferir a cada reajuste. ALESP = 75% do subsídio federal (CF art. 27 §2º)."
+  },
+  "temas": {
+    "_comentario": "Peso de cada tema no critério Relevância da agenda. Positivo soma, negativo subtrai. Prioridades editoriais do projeto: ajuste aqui e o site reflete na próxima atualização.",
+    "prioritarios": {
+      "peso": 1.0,
+      "temas": [
+        "seguranca",
+        "criancas",
+        "saude",
+        "educacao",
+        "contas",
+        "cidades"
+      ]
+    },
+    "relevantes": {
+      "peso": 0.6,
+      "temas": [
+        "ambiente",
+        "social",
+        "trabalho",
+        "transparencia",
+        "tecnologia",
+        "justica",
+        "consumidor",
+        "agro"
+      ]
+    },
+    "complementares": {
+      "peso": 0.3,
+      "temas": [
+        "cultura",
+        "institucional",
+        "outros"
+      ]
+    },
+    "simbolicas": {
+      "peso": -1.0,
+      "temas": [
+        "simbolica"
+      ]
+    }
   }
 }

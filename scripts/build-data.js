@@ -5,7 +5,8 @@
 //   node scripts/build-data.js --amostra       dados FICTÍCIOS para testar o site
 import fs from 'node:fs';
 import path from 'node:path';
-import { calcularScores, ranquear } from './lib/score.js';
+import { calcularScores, ranquear, pesosDosTemas } from './lib/score.js';
+import { ROTULO_TEMA, TIPOS } from './lib/temas.js';
 import { gerarAmostra } from './sample-data.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -52,6 +53,16 @@ function referencia(membros) {
   };
 }
 
+// Soma temas e tipos de toda a bancada de SP da casa (panorama do esforço)
+function somarBancada(sp) {
+  const soma = (campo) => {
+    const out = {};
+    for (const m of sp) for (const [k, v] of Object.entries(m.proposicoes?.[campo] || {})) out[k] = (out[k] || 0) + v;
+    return out;
+  };
+  return { parlamentares: sp.length, por_tema: soma('por_tema'), por_tipo: soma('por_tipo'), por_tema_aprovadas: soma('por_tema_aprovadas') };
+}
+
 async function main() {
   const anterior = lerJson(path.join(OUT, 'latest.json'), null);
   const resultado = {
@@ -60,6 +71,8 @@ async function main() {
     amostra,
     versao_metodologia: config.versao_metodologia,
     componentes: config.componentes,
+    temas: Object.fromEntries(Object.entries(ROTULO_TEMA).map(([id, rotulo]) => [id, { rotulo, peso: pesosDosTemas(config.temas)[id] ?? 0 }])),
+    tipos: TIPOS,
     casas: {},
     parlamentares: [],
   };
@@ -99,6 +112,7 @@ async function main() {
         benchmark: cfgCasa.benchmark,
         inicio_legislatura: cfgCasa.inicio_legislatura,
         referencia: referencia(comScore),
+        bancada_sp: somarBancada(sp),
         disponivel: {
           assiduidade: comScore.some((m) => m.presenca),
           custo_pessoal: sp.some((m) => m.custos?.assessores != null),

@@ -66,9 +66,11 @@ export async function coletarAlesp(cfg, hoje = new Date()) {
     if (!ref || ref < inicio) return;
     const natureza = naturezas.get(String(p.IdNatureza)) || '';
     const categoria = categoriaPorNatureza(natureza);
-    if (categoria === 'outra') return;
+    // tipos administrativos (ofícios, pareceres, anexos) não são propostas do parlamentar
+    if (categoria === 'outra' && !/mocao|emenda|substitutivo|requerimento/.test(norm(natureza))) return;
     props.set(String(p.IdDocumento), {
       sigla: siglaPorNatureza(natureza),
+      natureza,
       numero: p.NroLegislativo,
       ano: p.AnoLegislativo,
       ementa: p.Ementa,

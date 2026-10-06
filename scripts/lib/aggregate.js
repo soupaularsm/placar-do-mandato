@@ -1,8 +1,8 @@
 // Agrega a lista de proposições de um parlamentar no formato comum.
-import { ehHonorifica } from './classify.js';
+import { temaDe, tipoDe } from './temas.js';
 
 /**
- * @param {Array<{sigla,numero,ano,ementa,categoria,status,data,url}>} lista
+ * @param {Array<{sigla,natureza,numero,ano,ementa,palavras_chave,categoria,status,data,url}>} lista
  * @param {boolean} manterLista guarda a lista detalhada (só para quem é de SP)
  */
 export function resumirProposicoes(lista, manterLista = false) {
@@ -16,14 +16,23 @@ export function resumirProposicoes(lista, manterLista = false) {
     indicacoes: 0,
     outras: 0,
     por_status: { aprovada: 0, rejeitada: 0, arquivada: 0, andamento: 0 },
+    por_tipo: {},
+    por_tema: {},
+    por_tema_aprovadas: {},
   };
   const detalhada = [];
   for (const p of lista) {
-    const honor = p.categoria === 'normativa' && ehHonorifica(p.ementa);
+    const tipo = tipoDe(p.sigla, p.natureza, p.categoria);
+    r.por_tipo[tipo] = (r.por_tipo[tipo] || 0) + 1;
+
+    let tema = null;
     if (p.categoria === 'normativa') {
+      tema = temaDe(p.ementa, p.palavras_chave);
       r.normativas++;
       r.por_status[p.status] = (r.por_status[p.status] || 0) + 1;
-      if (honor) r.honorificas++;
+      r.por_tema[tema] = (r.por_tema[tema] || 0) + 1;
+      if (p.status === 'aprovada') r.por_tema_aprovadas[tema] = (r.por_tema_aprovadas[tema] || 0) + 1;
+      if (tema === 'simbolica') r.honorificas++;
       else {
         r.substantivas++;
         if (p.status === 'aprovada') r.substantivas_aprovadas++;
@@ -36,7 +45,9 @@ export function resumirProposicoes(lista, manterLista = false) {
       detalhada.push({
         sigla: p.sigla, numero: p.numero, ano: p.ano,
         ementa: (p.ementa || '').slice(0, 400),
-        categoria: honor ? 'honorifica' : p.categoria,
+        categoria: tema === 'simbolica' ? 'honorifica' : p.categoria,
+        tipo,
+        tema,
         status: p.categoria === 'normativa' ? p.status : null,
         data: p.data || null,
         url: p.url || null,

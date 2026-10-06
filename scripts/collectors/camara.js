@@ -115,7 +115,8 @@ export async function coletarCamara(cfg, hoje = new Date()) {
       if (data && data < inicio) continue; // proposições antigas que tramitaram no ano
       const situacao = p.ultimoStatus?.descricaoSituacao ?? p.ultimoStatus_descricaoSituacao ?? '';
       props.set(id, {
-        sigla: p.siglaTipo, numero: p.numero, ano: p.ano, ementa: p.ementa,
+        sigla: p.siglaTipo, natureza: p.descricaoTipo, numero: p.numero, ano: p.ano, ementa: p.ementa,
+        palavras_chave: p.keywords || '',
         categoria: categoriaPorSigla(p.siglaTipo, p.ementa),
         status: statusPorTexto(situacao),
         data,

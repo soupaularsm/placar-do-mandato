@@ -7,9 +7,27 @@
 // e torna o resultado legível: "75" = melhor que 75% dos pares naquele critério.
 
 /** Extrai o valor bruto de cada componente a partir do registro normalizado. */
-export function extratores(params) {
+/** Mapa tema -> peso a partir dos grupos de config.temas. */
+export function pesosDosTemas(temas = {}) {
+  const out = {};
+  for (const [nome, g] of Object.entries(temas)) {
+    if (nome.startsWith('_') || !g?.temas) continue;
+    for (const t of g.temas) out[t] = g.peso;
+  }
+  return out;
+}
+
+export function extratores(params, temas = {}) {
   const k = params.suavizacao_efetividade_k ?? 5;
+  const pesoTema = pesosDosTemas(temas);
   return {
+    agenda: (m) => {
+      const pt = m.proposicoes?.por_tema;
+      if (!pt) return null;
+      let soma = 0;
+      for (const [t, n] of Object.entries(pt)) soma += n * (pesoTema[t] ?? 0);
+      return Math.sign(soma) * Math.log1p(Math.abs(soma));
+    },
     assiduidade: (m) => m.presenca?.taxa ?? null,
     producao: (m) => (m.proposicoes ? Math.log1p(m.proposicoes.substantivas) : null),
     efetividade: (m, ctx) => {
@@ -46,8 +64,8 @@ function percentis(valores, menorMelhor) {
  * @returns membros com campo `score`
  */
 export function calcularScores(membros, config) {
-  const { componentes, parametros } = config;
-  const ext = extratores(parametros);
+  const { componentes, parametros, temas } = config;
+  const ext = extratores(parametros, temas);
 
   // contexto da casa
   let somaAprov = 0, somaSubs = 0;

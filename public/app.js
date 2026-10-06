@@ -23,7 +23,53 @@
   let dados = null;
   let pesosOficiais = {};
   let pesos = {};
-  const estado = { casa: 'camara', busca: '', partido: '', ordem: 'score' };
+  const estado = { casa: 'camara', busca: '', partido: '', ordem: 'score', tema: '' };
+  const fmt = (n) => (n ?? 0).toLocaleString('pt-BR');
+
+  // ---------- Temas ----------
+  const rotTema = (t) => dados.temas?.[t]?.rotulo || t;
+  const pesoTema = (t) => dados.temas?.[t]?.peso ?? 0;
+  const grupoTema = (t) => {
+    const w = pesoTema(t);
+    return w < 0 ? 'neg' : w >= 1 ? 'prio' : w >= 0.5 ? 'rel' : 'comp';
+  };
+  const ROT_GRUPO = { prio: 'prioritário', rel: 'relevante', comp: 'complementar', neg: 'tira pontos' };
+  const fracSimbolica = (pr) => (pr?.normativas ? (pr.por_tema?.simbolica || 0) / pr.normativas : 0);
+
+  /** Barras horizontais de temas. pt = {tema: n}, ap = {tema: aprovadas}. */
+  function graficoTemas(pt = {}, ap = {}, { clicavel = false, limite = 18 } = {}) {
+    const linhas = Object.entries(pt).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, limite);
+    if (!linhas.length) return '<p class="muted">Sem projetos de lei, PECs ou decretos no período.</p>';
+    const max = linhas[0][1];
+    const total = Object.values(pt).reduce((a, b) => a + b, 0);
+    return `<ul class="temas${clicavel ? ' clicavel' : ''}">${linhas.map(([t, n]) => {
+      const g = grupoTema(t);
+      const a = ap[t] || 0;
+      const dica = `${rotTema(t)}: ${fmt(n)} propostas (${Math.round((n / total) * 100)}%), ${fmt(a)} aprovadas`;
+      const conteudo = `<span class="tema-rot">${esc(rotTema(t))}<em class="grupo grupo-${g}">${ROT_GRUPO[g]}</em></span>
+          <span class="tema-num num">${fmt(n)}<small> · ${Math.round((n / total) * 100)}%</small></span>
+          <span class="tema-barra" aria-hidden="true"><i class="b-${g}" style="width:${(n / max) * 100}%"></i>${a ? `<i class="b-aprov" style="width:${(a / max) * 100}%"></i>` : ''}</span>`;
+      return `<li title="${esc(dica)}">${clicavel ? `<button type="button" data-tema="${esc(t)}" aria-pressed="${estado.tema === t}">${conteudo}</button>` : conteudo}</li>`;
+    }).join('')}</ul>
+    <div class="legenda" style="margin-top:8px"><span style="--c:var(--accent)">Apresentadas</span><span style="--c:var(--aprov)">Aprovadas</span><span style="--c:var(--neg)">Simbólicas</span></div>`;
+  }
+
+  function chipsTipos(por) {
+    const ent = Object.entries(por || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+    if (!ent.length) return '';
+    return `<ul class="tipos">${ent.map(([t, n]) => `<li><span>${esc(dados.tipos?.[t] || t)}</span><b class="num">${fmt(n)}</b></li>`).join('')}</ul>`;
+  }
+
+  function tagsLinha(p) {
+    const pr = p.proposicoes || {};
+    const pt = pr.por_tema || {};
+    let top = Object.entries(pt).filter(([t]) => t !== 'simbolica' && t !== 'outros').sort((a, b) => b[1] - a[1]).slice(0, 2).map(([t]) => t);
+    if (estado.tema && estado.tema !== 'simbolica') top = [estado.tema, ...top.filter((t) => t !== estado.tema)].slice(0, 2);
+    const tags = top.map((t) => `<em class="tag${t === estado.tema ? ' ativo' : ''}">${esc(rotTema(t))}${t === estado.tema ? ` ${fmt(pt[t])}` : ''}</em>`);
+    const fs = fracSimbolica(pr);
+    if (fs >= 0.25 || estado.tema === 'simbolica') tags.push(`<em class="tag tag-neg">${Math.round(fs * 100)}% simbólicas</em>`);
+    return tags.length ? `<span class="tags">${tags.join('')}</span>` : '';
+  }
 
   // ---------- Score com pesos do visitante ----------
   function scoreCom(p) {
@@ -92,6 +138,7 @@
       lista = lista.filter((p) => p.nome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().includes(q));
     }
     if (estado.partido) lista = lista.filter((p) => p.partido === estado.partido);
+    if (estado.tema) lista = lista.filter((p) => (p.proposicoes?.por_tema?.[estado.tema] || 0) > 0);
     const ult = (v) => (v == null ? -Infinity : v);
     const ord = {
       score: (a, b) => ult(b.meu) - ult(a.meu),
@@ -99,7 +146,9 @@
       aprovadas: (a, b) => ult(b.proposicoes?.substantivas_aprovadas) - ult(a.proposicoes?.substantivas_aprovadas),
       cota: (a, b) => (a.custos.cota_mensal_media ?? Infinity) - (b.custos.cota_mensal_media ?? Infinity),
       nome: (a, b) => a.nome.localeCompare(b.nome, 'pt-BR'),
-    }[estado.ordem];
+      tema: (a, b) => (b.proposicoes?.por_tema?.[estado.tema] || 0) - (a.proposicoes?.por_tema?.[estado.tema] || 0),
+      simbolicas: (a, b) => fracSimbolica(a.proposicoes) - fracSimbolica(b.proposicoes),
+    }[estado.ordem === 'tema' && !estado.tema ? 'score' : estado.ordem];
     lista.sort(ord);
 
     const chaves = Object.keys(dados.componentes);
@@ -121,9 +170,9 @@
       return `<li><button class="linha" data-id="${esc(p.id)}" aria-label="Abrir perfil de ${esc(p.nome)}">
         <span class="pos">${pos ?? '–'}</span>
         ${avatar(p)}
-        <span class="quem"><strong>${esc(p.nome)}</strong><span>${esc(p.partido)}</span></span>
+        <span class="quem"><strong>${esc(p.nome)}</strong><span>${esc(p.partido)}</span>${tagsLinha(p)}</span>
         <span class="score">${scoreHtml}</span>
-        <span class="componentes" aria-label="Percentis por critério">${barras}</span>
+        <span class="componentes" style="grid-template-columns:repeat(${chaves.length},1fr)" aria-label="Percentis por critério">${barras}</span>
         <span class="dado d1"><b>${pct(p.presenca?.taxa)}</b><span>presença</span></span>
         <span class="dado d2"><b>${pr ? `${pr.substantivas_aprovadas}/${pr.substantivas}` : '–'}</b><span>aprovadas de propostas</span></span>
       </button></li>`;
@@ -144,11 +193,53 @@
     $('#lista-criterios').innerHTML = Object.entries(dados.componentes).map(([k, c]) =>
       `<div><dt>${esc(c.rotulo)} <span class="num">${Math.round((c.peso / total) * 100)}%</span></dt><dd>${esc(c.descricao)}</dd></div>`).join('');
     $('#versao').textContent = 'v' + dados.versao_metodologia;
+    const grupos = {};
+    for (const [t, v] of Object.entries(dados.temas || {})) (grupos[grupoTema(t)] ??= { peso: v.peso, temas: [] }).temas.push(v.rotulo);
+    $('#lista-temas').innerHTML = ['prio', 'rel', 'comp', 'neg'].filter((g) => grupos[g]).map((g) =>
+      `<div><dt>${esc(ROT_GRUPO[g].replace(/^./, (c) => c.toUpperCase()))} <span class="num">${grupos[g].peso > 0 ? '+' : ''}${String(grupos[g].peso).replace('.', ',')}</span></dt><dd>${grupos[g].temas.map(esc).join(', ')}</dd></div>`).join('');
+  }
+
+  function renderTemasFiltro() {
+    const sel = $('#tema');
+    const ids = Object.keys(dados.temas || {});
+    sel.innerHTML = '<option value="">Todos</option>' + ids.map((t) => `<option value="${t}"${t === estado.tema ? ' selected' : ''}>${esc(rotTema(t))}</option>`).join('');
+  }
+
+  function renderPanorama() {
+    const c = dados.casas[estado.casa];
+    const b = c?.bancada_sp;
+    const el = $('#panorama');
+    if (!b) { el.hidden = true; return; }
+    el.hidden = false;
+    const pt = b.por_tema || {};
+    const total = Object.values(pt).reduce((x, y) => x + y, 0);
+    const simb = pt.simbolica || 0;
+    const prio = Object.entries(pt).filter(([t]) => grupoTema(t) === 'prio').reduce((x, [, n]) => x + n, 0);
+    const aprovTotal = Object.values(b.por_tema_aprovadas || {}).reduce((x, y) => x + y, 0);
+    const aprovSimb = (b.por_tema_aprovadas || {}).simbolica || 0;
+    const desde = new Date(c.inicio_legislatura + 'T12:00').getFullYear();
+    el.innerHTML = `
+      <header>
+        <h2>Onde a bancada de SP concentra esforço</h2>
+        <p class="muted">${fmt(total)} projetos de lei, PECs e decretos apresentados pelos ${b.parlamentares} parlamentares de SP ${c.nome === 'Senado Federal' ? 'no Senado' : c.nome === 'Câmara dos Deputados' ? 'na Câmara' : 'na ALESP'} desde ${desde}, por tema. Toque num tema para ver quem mais propõe sobre ele.</p>
+      </header>
+      <div class="panorama-grade">
+        <div class="manchetes">
+          <div class="manchete"><b class="num">${total ? Math.round((simb / total) * 100) : 0}%</b><span>são simbólicas: nome de via, data comemorativa, título, utilidade pública</span></div>
+          <div class="manchete"><b class="num">${total ? Math.round((prio / total) * 100) : 0}%</b><span>tratam de temas prioritários: segurança, saúde, educação, crianças, contas públicas e cidades</span></div>
+          <div class="manchete"><b class="num">${aprovTotal ? Math.round((aprovSimb / aprovTotal) * 100) : 0}%</b><span>das aprovadas são simbólicas</span></div>
+        </div>
+        <div class="min0">${graficoTemas(pt, b.por_tema_aprovadas, { clicavel: true })}</div>
+      </div>
+      <h3 class="sub">Tipos de proposição apresentados</h3>
+      ${chipsTipos(b.por_tipo)}`;
   }
 
   function renderLista() {
     renderAbas();
     renderPartidos();
+    renderTemasFiltro();
+    renderPanorama();
     renderNotaCasa();
     renderRanking();
   }
@@ -161,9 +252,14 @@
       case 'assiduidade':
         return p.presenca ? `${p.presenca.presentes} de ${p.presenca.sessoes} (${pct(p.presenca.taxa, 1)}). Mediana da casa: ${pct(ref.presenca_taxa, 1)}.` : 'Sem dado de presença para esta casa.';
       case 'producao':
-        return `${pr.substantivas ?? 0} proposições substantivas como primeira autora; ${pr.honorificas ?? 0} honoríficas ficaram de fora. Mediana: ${ref.substantivas ?? '–'}.`;
+        return `${pr.substantivas ?? 0} proposições substantivas como primeira autora; ${pr.honorificas ?? 0} simbólicas ficaram de fora. Mediana: ${ref.substantivas ?? '–'}.`;
       case 'efetividade':
         return `${pr.substantivas_aprovadas ?? 0} aprovadas de ${pr.substantivas ?? 0}. Taxa mediana da casa: ${pct(ref.taxa_aprovacao, 1)}.`;
+      case 'agenda': {
+        const pt = pr.por_tema || {};
+        const soma = (g) => Object.entries(pt).filter(([t]) => grupoTema(t) === g).reduce((x, [, n]) => x + n, 0);
+        return `${soma('prio')} propostas em temas prioritários, ${soma('rel')} em relevantes, ${soma('comp')} complementares e ${pt.simbolica || 0} simbólicas, que tiram pontos.`;
+      }
       case 'fiscalizacao':
         return `${pr.fiscalizacao ?? 0} requerimentos de informação ou fiscalização. Mediana: ${ref.fiscalizacao ?? '–'}.`;
       case 'custo_cota':
@@ -193,6 +289,7 @@
   }
 
   let filtroProps = 'todas';
+  let filtroTemaProps = '';
   let limiteProps = 15;
   function renderProps(lista) {
     const f = {
@@ -202,7 +299,7 @@
       honorifica: (x) => x.categoria === 'honorifica',
       fiscalizacao: (x) => x.categoria === 'fiscalizacao',
     }[filtroProps];
-    const itens = lista.filter(f);
+    const itens = lista.filter((x) => f(x) && (!filtroTemaProps || x.tema === filtroTemaProps));
     const mostrar = itens.slice(0, limiteProps);
     const selo = (x) => {
       if (x.categoria === 'fiscalizacao') return ['Fiscalização', 'var(--accent)'];
@@ -213,8 +310,10 @@
     return (mostrar.length ? mostrar.map((x) => {
       const [rot, c] = selo(x);
       const id = `${esc(x.sigla)} ${esc(x.numero)}/${esc(x.ano)}`;
-      return `<li class="prop"><span class="id">${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${id}</a>` : id}</span>
-        <span class="em">${esc(x.ementa)}</span><span class="selo" style="--c:${c}">${esc(rot)}</span></li>`;
+      const tema = x.tema ? `<em class="tag${grupoTema(x.tema) === 'neg' ? ' tag-neg' : ''}">${esc(rotTema(x.tema))}</em>` : '';
+      const tipo = x.tipo && dados.tipos?.[x.tipo] ? `<span class="tipo-rot">${esc(dados.tipos[x.tipo])}</span>` : '';
+      return `<li class="prop"><span class="id">${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${id}</a>` : id}${tipo}</span>
+        <span class="em">${esc(x.ementa)}${tema ? `<span class="tags">${tema}</span>` : ''}</span><span class="selo" style="--c:${c}">${esc(rot)}</span></li>`;
     }).join('') : '<li class="vazio">Nenhuma proposição nesse filtro.</li>') +
       (itens.length > mostrar.length ? `<li style="padding-top:12px"><button class="btn" data-mais>Mostrar mais (${mostrar.length} de ${itens.length})</button></li>` : '');
   }
@@ -222,6 +321,7 @@
   async function abrirPerfil(id) {
     const resumo = dados.parlamentares.find((p) => p.id === id);
     limiteProps = 15;
+    filtroTemaProps = '';
     if (!resumo) return mostrarLista();
     $('#lista-view').hidden = true;
     $('#perfil-view').hidden = false;
@@ -292,12 +392,22 @@
       </section>
 
       <section class="bloco">
+        <h3>Onde está o esforço</h3>
+        <p class="muted">Projetos de lei, PECs e decretos por tema. ${pr.normativas ? `${Math.round(fracSimbolica(pr) * 100)}% são simbólicos; na bancada de SP desta casa, a média é ${(() => { const b = dados.casas[p.casa]?.bancada_sp?.por_tema || {}; const t = Object.values(b).reduce((x, y) => x + y, 0); return t ? Math.round(((b.simbolica || 0) / t) * 100) : 0; })()}%.` : ''}</p>
+        ${graficoTemas(pr.por_tema, pr.por_tema_aprovadas)}
+        <h3 class="sub">Tipos de proposição</h3>
+        ${chipsTipos(pr.por_tipo)}
+      </section>
+
+      <section class="bloco">
         <h3>Propostas</h3>
-        <p class="muted">${pr.normativas ?? 0} proposições normativas como primeira autora (${pr.honorificas ?? 0} honoríficas), ${pr.fiscalizacao ?? 0} de fiscalização e ${pr.indicacoes ?? 0} indicações.</p>
+        <p class="muted">${pr.normativas ?? 0} proposições normativas como primeira autora (${pr.honorificas ?? 0} simbólicas), ${pr.fiscalizacao ?? 0} de fiscalização e ${pr.indicacoes ?? 0} indicações.</p>
         <div class="empilhada" role="img" aria-label="Situação das proposições normativas">${empilhada}</div>
         <div class="legenda">${legenda}</div>
         <div class="props-filtros" style="margin-top:16px" id="props-filtros">
-          ${[['todas', 'Todas'], ['normativa', 'Substantivas'], ['aprovada', 'Aprovadas'], ['honorifica', 'Honoríficas'], ['fiscalizacao', 'Fiscalização']].map(([k, r]) => `<button class="chip" data-filtro="${k}" aria-pressed="${filtroProps === k}">${r}</button>`).join('')}
+          ${[['todas', 'Todas'], ['normativa', 'Substantivas'], ['aprovada', 'Aprovadas'], ['honorifica', 'Simbólicas'], ['fiscalizacao', 'Fiscalização']].map(([k, r]) => `<button class="chip" data-filtro="${k}" aria-pressed="${filtroProps === k}">${r}</button>`).join('')}
+          <label class="visualmente-oculto" for="tema-props">Tema</label>
+          <select id="tema-props" class="chip-select"><option value="">Todos os temas</option>${Object.entries(pr.por_tema || {}).sort((a, b) => b[1] - a[1]).map(([t, n]) => `<option value="${t}">${esc(rotTema(t))} (${n})</option>`).join('')}</select>
         </div>
         <ul class="props" id="props">${renderProps(pr.lista || [])}</ul>
       </section>`;
@@ -305,6 +415,11 @@
     $('#props').addEventListener('click', (e) => {
       if (!e.target.closest('[data-mais]')) return;
       limiteProps += 30;
+      $('#props').innerHTML = renderProps(pr.lista || []);
+    });
+    $('#tema-props').addEventListener('change', (e) => {
+      filtroTemaProps = e.target.value;
+      limiteProps = 15;
       $('#props').innerHTML = renderProps(pr.lista || []);
     });
     $('#props-filtros').addEventListener('click', (e) => {
@@ -315,6 +430,16 @@
       $('#props-filtros').querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', x === b));
       $('#props').innerHTML = renderProps(pr.lista || []);
     });
+  }
+
+  function definirTema(t) {
+    estado.tema = t;
+    if (t && estado.ordem === 'score') estado.ordem = t === 'simbolica' ? 'score' : 'tema';
+    if (!t && estado.ordem === 'tema') estado.ordem = 'score';
+    $('#ordem').value = estado.ordem;
+    renderTemasFiltro();
+    renderPanorama();
+    renderRanking();
   }
 
   function mostrarLista() {
@@ -343,6 +468,13 @@
     $('#busca').addEventListener('input', (e) => { estado.busca = e.target.value.trim(); renderRanking(); });
     $('#partido').addEventListener('change', (e) => { estado.partido = e.target.value; renderRanking(); });
     $('#ordem').addEventListener('change', (e) => { estado.ordem = e.target.value; renderRanking(); });
+    $('#tema').addEventListener('change', (e) => { definirTema(e.target.value); });
+    $('#panorama').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tema]');
+      if (!b) return;
+      definirTema(estado.tema === b.dataset.tema ? '' : b.dataset.tema);
+      $('#ranking').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
     $('#ranking').addEventListener('click', (e) => {
       const b = e.target.closest('[data-id]');
       if (b) location.hash = 'p-' + b.dataset.id;

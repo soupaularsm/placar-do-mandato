@@ -29,12 +29,15 @@
     <div class="filtros">
       <div class="campo busca"><label for="busca">Buscar</label><input id="busca" type="search" placeholder="Nome do parlamentar" autocomplete="off"></div>
       <div class="campo"><label for="partido">Partido</label><select id="partido"><option value="">Todos</option></select></div>
+      <div class="campo"><label for="tema">Tema</label><select id="tema"><option value="">Todos</option></select></div>
       <div class="campo"><label for="ordem">Ordenar por</label>
         <select id="ordem">
           <option value="score">Score</option>
           <option value="assiduidade">Assiduidade</option>
           <option value="aprovadas">Propostas aprovadas</option>
           <option value="cota">Menor gasto na cota</option>
+          <option value="tema">Mais propostas no tema</option>
+          <option value="simbolicas">Menos propostas simbólicas</option>
           <option value="nome">Nome</option>
         </select>
       </div>
@@ -49,6 +52,7 @@
       <div class="pesos-grade" id="pesos-grade"></div>
     </section>
 
+    <section class="panorama" id="panorama" aria-label="Panorama da bancada" hidden></section>
     <p class="nota-casa" id="nota-casa"></p>
     <div class="cabecalho-ranking" aria-hidden="true">
       <span>#</span><span></span><span>Parlamentar</span><span>Score</span><span>Critérios</span><span>Presença</span><span>Aprovadas</span>
@@ -65,10 +69,14 @@
     <p>Cada critério vira um percentil de 0 a 100 dentro da mesma casa. Um percentil 75 em assiduidade quer dizer que a pessoa esteve mais presente que 75% dos colegas. Deputados federais e senadores de SP são comparados com todos os parlamentares do país na mesma casa; deputados estaduais, com os 94 da ALESP. O score é a média ponderada desses percentis.</p>
     <p>Se um critério não tem dado para uma casa, ele sai da conta e os outros pesos são redistribuídos. Quem tem menos de 120 dias em exercício ou menos de 60% dos critérios disponíveis aparece sem score.</p>
     <dl id="lista-criterios"></dl>
+    <h3>Peso dos temas na relevância da agenda</h3>
+    <p>Cada projeto de lei, PEC ou decreto recebe um tema principal, identificado por palavras-chave na ementa. A soma dos pesos dos temas de cada parlamentar forma o critério. As prioridades são uma escolha editorial do projeto, publicada aqui para que qualquer pessoa possa discordar e recalcular.</p>
+    <dl id="lista-temas"></dl>
     <h3>Limites que você precisa conhecer</h3>
     <ul class="limites">
       <li>Quantidade não é qualidade. O score mede atividade e custo observáveis; não avalia o mérito ou a orientação política de nenhuma proposta.</li>
       <li>Só contam proposições em que a pessoa é a primeira autora. Coautorias, relatorias e trabalho em comissões ainda não entram.</li>
+      <li>A classificação por tema é automática e acerta em torno de 9 em cada 10 ementas. Erros acontecem, em especial em ementas que só citam o número da lei alterada.</li>
       <li>Honoríficas e declaratórias (nome de via, data comemorativa, título de cidadão, utilidade pública, classificação de município como de interesse turístico) são identificadas pelo texto da ementa e ficam fora da produção legislativa e da efetividade.</li>
       <li>Presença segue a mesma regra nas três casas: licenças e missões oficiais saem da conta; qualquer outra ausência conta, justificada ou não. O perfil mostra quantas ausências foram justificadas. Na Câmara e na ALESP a base são as sessões deliberativas do Plenário; no Senado, as votações nominais.</li>
       <li>Na ALESP, o histórico de quem assumiu como suplente ainda não é tratado: todos são medidos desde o início da legislatura.</li>

@@ -90,3 +90,34 @@ test('declaratórias de município contam como honoríficas', () => {
   assert.ok(ehHonorifica('Classifica como de Interesse Turístico o Município de Lucélia.'));
   assert.ok(!ehHonorifica('Institui o Programa Estadual de Incentivo ao Transporte Público'));
 });
+
+import { temaDe, tipoDe } from '../scripts/lib/temas.js';
+import { extratores } from '../scripts/lib/score.js';
+
+test('temas', () => {
+  assert.equal(temaDe('Institui o "Dia Estadual do Ciclista"'), 'simbolica');
+  assert.equal(temaDe('Declara feriado o dia 20 de novembro'), 'simbolica');
+  assert.equal(temaDe('Denomina "Fulano" a rotatória da SP 305'), 'simbolica');
+  assert.equal(temaDe('Altera o Código Penal para aumentar a pena do crime de estelionato'), 'seguranca');
+  assert.equal(temaDe('Dispõe sobre o atendimento em UBS e hospitais do SUS'), 'saude');
+  assert.equal(temaDe('Institui a Política Estadual de Proteção da Primeira Infância'), 'criancas');
+  assert.equal(temaDe('Reduz a alíquota do ICMS sobre medicamentos'), 'saude');
+  assert.equal(temaDe('Isenta do IPVA veículos de motoristas de aplicativo'), 'contas');
+  assert.equal(temaDe('Susta a Resolução nº 34, que define diretrizes e recomendações'), 'institucional');
+});
+
+test('tipos', () => {
+  assert.equal(tipoDe('PL'), 'lei');
+  assert.equal(tipoDe('PEC'), 'pec');
+  assert.equal(tipoDe('EMC'), 'emenda');
+  assert.equal(tipoDe('RIC', '', 'fiscalizacao'), 'fiscalizacao');
+  assert.equal(tipoDe('', 'Moção'), 'mocao');
+  assert.equal(tipoDe('', 'Indicação'), 'indicacao');
+});
+
+test('agenda: simbólicas tiram pontos', () => {
+  const temas = { a: { peso: 1, temas: ['saude'] }, s: { peso: -1, temas: ['simbolica'] } };
+  const ag = extratores({}, temas).agenda;
+  assert.ok(ag({ proposicoes: { por_tema: { saude: 10 } } }) > 0);
+  assert.ok(ag({ proposicoes: { por_tema: { saude: 2, simbolica: 10 } } }) < 0);
+});
