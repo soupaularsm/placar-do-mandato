@@ -57,6 +57,7 @@
   const estado = {
     casa: 'camara', busca: '', partido: '', ordem: 'score', tema: '',
     podio: 'todas', pesosAbertos: false, todosTemas: false, rankLimite: 20,
+    ptCasa: 'todas', ptFoco: '', ptOrdem: ['score', 'desc'], ptMembros: false,
     perfil: { filtro: 'todas', tema: '', limite: 15, lista: [] },
   };
 
@@ -259,13 +260,14 @@
     const temas = Object.keys(dados.temas || {});
     return `
       <div class="secao-cab"><div><h2>Ranking ${DA_CASA[estado.casa]}</h2>
-        <p>Score de 0 a 100 dos parlamentares de SP ${NA_CASA[estado.casa]}. Toque numa linha para ver o perfil completo.</p></div></div>
+        <p>Score de 0 a 100 dos parlamentares de SP ${NA_CASA[estado.casa]}. Toque numa linha para ver o perfil completo.</p></div>
+        <a class="btn btn-link" href="#partidos">Comparar partidos →</a></div>
       <div class="filtros">
         <div class="campo busca"><label class="visualmente-oculto" for="busca">Buscar parlamentar</label><input id="busca" type="search" placeholder="Buscar por nome" value="${esc(estado.busca)}" autocomplete="off"></div>
         <div class="campo"><label class="visualmente-oculto" for="partido">Partido</label><select id="partido"><option value="">Todos os partidos</option>${ps.map((p) => `<option${p === estado.partido ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select></div>
         <div class="campo"><label class="visualmente-oculto" for="tema">Tema</label><select id="tema"><option value="">Todos os temas</option>${temas.map((t) => `<option value="${t}"${t === estado.tema ? ' selected' : ''}>${esc(rotTema(t))}</option>`).join('')}</select></div>
         <div class="campo"><label class="visualmente-oculto" for="ordem">Ordenar</label><select id="ordem">
-          ${[['score', 'Maior score'], ['assiduidade', 'Maior presença'], ['aprovadas', 'Mais projetos aprovados'], ['cota', 'Menor gasto na cota'], ['simbolicas', 'Menos projetos simbólicos'], ['tema', 'Mais projetos no tema'], ['nome', 'Nome']]
+          ${[['score', 'Maior score'], ['assiduidade', 'Maior presença'], ['aprovadas', 'Mais projetos aprovados'], ['cota', 'Menor gasto na cota'], ['cota_desc', 'Maior gasto na cota'], ['custo_desc', 'Maior custo estimado'], ['simbolicas', 'Menos projetos simbólicos'], ['tema', 'Mais projetos no tema'], ['nome', 'Nome']]
             .map(([v, r]) => `<option value="${v}"${v === estado.ordem ? ' selected' : ''}>${r}</option>`).join('')}
         </select></div>
         <button class="btn" id="btn-pesos" aria-pressed="${estado.pesosAbertos}" aria-controls="pesos">Ajustar pesos</button>
@@ -306,6 +308,8 @@
       assiduidade: (a, b) => ult(b.presenca?.taxa) - ult(a.presenca?.taxa),
       aprovadas: (a, b) => ult(b.proposicoes?.substantivas_aprovadas) - ult(a.proposicoes?.substantivas_aprovadas),
       cota: (a, b) => (a.custos.cota_mensal_media ?? Infinity) - (b.custos.cota_mensal_media ?? Infinity),
+      cota_desc: (a, b) => (b.custos.cota_mensal_media ?? -Infinity) - (a.custos.cota_mensal_media ?? -Infinity),
+      custo_desc: (a, b) => (b.custos.custo_estimado_mensal ?? -Infinity) - (a.custos.custo_estimado_mensal ?? -Infinity),
       simbolicas: (a, b) => fracSimb(a.proposicoes) - fracSimb(b.proposicoes),
       tema: (a, b) => (b.proposicoes?.por_tema?.[estado.tema] || 0) - (a.proposicoes?.por_tema?.[estado.tema] || 0),
       nome: (a, b) => a.nome.localeCompare(b.nome, 'pt-BR'),
@@ -558,7 +562,7 @@
         <div class="perfil-cab">
           ${foto(resumo, 'xg')}
           <div><h1>${esc(p.nome)}</h1>
-            <div class="meta"><span>${esc(p.partido)}</span><span>${esc(p.casa_nome)}</span><span>${fmt(Math.round(p.dias_em_exercicio))} dias em exercício</span>${p.url_oficial ? `<a href="${esc(p.url_oficial)}" target="_blank" rel="noopener">Página oficial</a>` : ''}</div>
+            <div class="meta"><a href="#partidos:${encodeURIComponent(p.partido)}" title="Ver análise do partido">${esc(p.partido)}</a><span>${esc(p.casa_nome)}</span><span>${fmt(Math.round(p.dias_em_exercicio))} dias em exercício</span>${p.url_oficial ? `<a href="${esc(p.url_oficial)}" target="_blank" rel="noopener">Página oficial</a>` : ''}</div>
           </div>
           <div class="placar">
             <div class="valor" style="color:${cor(meu)}">${meu == null ? '–' : n1(meu)}<small> /100</small></div>
@@ -603,6 +607,357 @@
     if (!itens.length) return '<li class="vazio">Nenhuma proposta neste filtro.</li>';
     return itens.slice(0, limite).map((x) => itemProposta(x)).join('') +
       (itens.length > limite ? `<li class="mais"><button class="btn" data-mais>Mostrar mais (${limite} de ${itens.length})</button></li>` : '');
+  }
+
+  // ================= Partidos =================
+  const media = (xs) => { const v = xs.filter((x) => x != null && !Number.isNaN(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  const somaCampo = (ms, f) => ms.reduce((a, p) => a + (f(p) || 0), 0);
+  const n1s = (v) => (v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }));
+  const pctS = (v) => (v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.round(Math.abs(v) * 100) + '%');
+  function gruposDe(pr) {
+    const g = { prio: 0, rel: 0, comp: 0, neg: 0 };
+    for (const [t, n] of Object.entries(pr?.por_tema || {})) g[grupoTema(t)] += n;
+    return g;
+  }
+  function cotaIdxDe(p) {
+    const ref = dados.casas[p.casa]?.referencia?.cota_mensal_media;
+    return p.custos?.cota_mensal_media != null && ref ? p.custos.cota_mensal_media / ref - 1 : null;
+  }
+  function membrosEscopo() { return estado.ptCasa === 'todas' ? dados.parlamentares : daCasa(estado.ptCasa); }
+
+  function dadosPartidos() {
+    const ms0 = membrosEscopo();
+    const minimo = estado.ptCasa === 'senado' ? 1 : 2;
+    const g = new Map();
+    for (const p of ms0) { if (!g.has(p.partido)) g.set(p.partido, []); g.get(p.partido).push(p); }
+    return [...g].map(([sigla, ms]) => {
+      const sc = ms.map(scoreCom).filter((v) => v != null);
+      const grupos = ms.reduce((a, p) => { const q = gruposDe(p.proposicoes); for (const k in a) a[k] += q[k]; return a; }, { prio: 0, rel: 0, comp: 0, neg: 0 });
+      const normativas = somaCampo(ms, (p) => p.proposicoes?.normativas);
+      return {
+        sigla, membros: ms, n: ms.length, valido: ms.length >= minimo,
+        score: media(sc), scoreMin: sc.length ? Math.min(...sc) : null, scoreMax: sc.length ? Math.max(...sc) : null,
+        presenca: media(ms.map((p) => p.presenca?.taxa)),
+        cotaIdx: media(ms.map(cotaIdxDe)),
+        cota: media(ms.map((p) => p.custos?.cota_mensal_media)),
+        assessores: media(ms.map((p) => p.custos?.assessores)),
+        grupos, normativas,
+        prioPor: grupos.prio / ms.length,
+        simb: normativas ? grupos.neg / normativas : null,
+        projPor: somaCampo(ms, (p) => p.proposicoes?.substantivas) / ms.length,
+        aprovPor: somaCampo(ms, (p) => p.proposicoes?.substantivas_aprovadas) / ms.length,
+        fiscPor: somaCampo(ms, (p) => p.proposicoes?.fiscalizacao) / ms.length,
+      };
+    });
+  }
+  function mediaGeral() {
+    const ms = membrosEscopo();
+    const norm = somaCampo(ms, (p) => p.proposicoes?.normativas);
+    const g = ms.reduce((a, p) => { const q = gruposDe(p.proposicoes); for (const k in a) a[k] += q[k]; return a; }, { prio: 0, rel: 0, comp: 0, neg: 0 });
+    return {
+      score: media(ms.map(scoreCom)), presenca: media(ms.map((p) => p.presenca?.taxa)), cotaIdx: media(ms.map(cotaIdxDe)),
+      cota: media(ms.map((p) => p.custos?.cota_mensal_media)), prioPor: g.prio / (ms.length || 1), simb: norm ? g.neg / norm : null,
+      projPor: somaCampo(ms, (p) => p.proposicoes?.substantivas) / (ms.length || 1),
+    };
+  }
+  const umaCasa = () => estado.ptCasa !== 'todas';
+  const fmtCota = (x) => (umaCasa() && x.cota != null ? `${brlMil(x.cota)}/mês` : `${pctS(x.cotaIdx)} vs mediana`);
+
+  function viewPartidos() {
+    return `<div id="pg-partidos">${conteudoPartidos()}</div>`;
+  }
+
+  function conteudoPartidos() {
+    const L = dadosPartidos();
+    const V = L.filter((x) => x.valido);
+    const ms = membrosEscopo();
+    const comScore = V.filter((x) => x.score != null).sort((a, b) => b.score - a.score);
+    const maior = [...L].sort((a, b) => b.n - a.n)[0];
+    const amplitude = comScore.length > 1 ? comScore[0].score - comScore[comScore.length - 1].score : null;
+    const fora = L.filter((x) => !x.valido).length;
+    const chips = [...L].sort((a, b) => b.n - a.n || a.sigla.localeCompare(b.sigla));
+    return `
+      <div class="wrap">
+        <div class="pag-cab pt-cab">
+          <h1>Análise por partido</h1>
+          <p class="lead">Como cada partido de São Paulo entrega, gasta e escolhe suas pautas. Médias dos parlamentares de cada partido, com os mesmos dados e pesos do ranking.</p>
+          <div class="controles">${segmentos([['todas', 'Todas', dados.parlamentares.length], ...CASAS.map(([id, r]) => [id, r, daCasa(id).length])], estado.ptCasa, 'data-pt-casa')}</div>
+          <div class="heroi-numeros pt-numeros">
+            <div><b>${fmt(L.length)}</b><span>partidos com mandato ${estado.ptCasa === 'todas' ? 'em SP' : NA_CASA[estado.ptCasa]}</span></div>
+            <div><b>${maior ? esc(maior.sigla) : '–'}</b><span>maior bancada, com ${maior ? fmt(maior.n) : 0} parlamentares</span></div>
+            <div><b>${amplitude == null ? '–' : n1(amplitude)}</b><span>pontos separam o melhor e o pior score médio</span></div>
+          </div>
+        </div>
+        <section class="pt-escolha" aria-label="Escolha um partido">
+          <p class="pt-rotulo">Escolha um partido para ver a ficha e destacá-lo em todos os gráficos</p>
+          <div class="chips" id="pt-chips">${chips.map((x) => `<button type="button" data-partido-foco="${esc(x.sigla)}" aria-pressed="${x.sigla === estado.ptFoco}">${esc(x.sigla)} <span class="chip-n">${x.n}</span></button>`).join('')}</div>
+          <div id="pt-ficha">${fichaPartido()}</div>
+        </section>
+      </div>
+
+      <div class="faixa"><div class="wrap secao">
+        <div class="secao-cab"><div><h2>Destaques entre os partidos</h2>
+          <p>Os extremos em cada critério.${fora && estado.ptCasa !== 'senado' ? ` Partidos com um só parlamentar ficam de fora, porque a média de uma pessoa não representa o partido.` : ''}</p></div></div>
+        ${destaquesPartidos(V)}
+      </div></div>
+
+      <div class="wrap secao">
+        <div class="secao-cab"><div><h2>Quem entrega mais pelo que gasta</h2>
+          <p>Cada bolha é um partido. Para cima, score médio maior; para a esquerda, gasto na cota menor que a mediana da casa. O tamanho da bolha acompanha o número de parlamentares.</p></div></div>
+        <div class="cartao pt-mapa-cartao">${mapaPartidos(V)}</div>
+      </div>
+
+      <div class="wrap secao secao-div">
+        <div class="secao-cab"><div><h2>Score médio e a distância dentro de cada partido</h2>
+          <p>A barra mostra a média; cada ponto é um parlamentar. Partido com pontos espalhados tem gente muito boa e muito ruim na mesma bancada. Toque num ponto para abrir o perfil.</p></div></div>
+        <div class="cartao">${dispersaoScore(comScore)}</div>
+      </div>
+
+      <div class="wrap secao secao-div">
+        <div class="duas pt-duas">
+          <section>
+            <div class="secao-cab"><div><h2>Quem gasta mais e quem gasta menos</h2>
+              <p>Gasto médio na cota parlamentar em relação à mediana da casa${umaCasa() ? '' : ', para comparar Câmara, Senado e ALESP na mesma régua'}.</p></div></div>
+            <div class="cartao">${gastosPartidos(V)}</div>
+          </section>
+          <section>
+            <div class="secao-cab"><div><h2>Quem mais propõe nas pautas para o povo</h2>
+              <p>Projetos de lei, PECs e decretos por peso do tema. Ordenado por projetos em temas prioritários por parlamentar.</p></div></div>
+            <div class="cartao">${pautasPartidos(V)}</div>
+          </section>
+        </div>
+      </div>
+
+      <div class="wrap secao secao-div">
+        <div class="secao-cab"><div><h2>Todos os números</h2>
+          <p>Toque no título de uma coluna para ordenar. Médias por parlamentar.</p></div></div>
+        <div class="cartao pt-tabela-cartao" id="pt-tabela">${tabelaPartidos(L)}</div>
+        <p class="pt-nota">O partido é a filiação atual informada pela casa. O score de cada parlamentar compara com colegas da mesma casa, então a média por partido pode juntar Câmara, Senado e ALESP. Gastos de casas diferentes são comparados pela distância até a mediana de cada casa. Se você mudar os pesos no ranking, esta página usa os seus pesos.</p>
+      </div>
+      <div class="pt-flutuante" id="pt-flut"${estado.ptFoco ? '' : ' hidden'}>${flutuante()}</div>`;
+  }
+
+  function flutuante() {
+    return `<span>Em foco: <b>${esc(estado.ptFoco)}</b></span><button type="button" data-pt-ver>Ver ficha</button><button type="button" data-pt-limpar aria-label="Tirar o foco">✕</button>`;
+  }
+
+  function fichaPartido() {
+    const s = estado.ptFoco;
+    if (!s) return '';
+    const x = dadosPartidos().find((y) => y.sigla === s);
+    if (!x) return `<div class="cartao pt-ficha"><p class="muted">${esc(s)} não tem parlamentares ${estado.ptCasa === 'todas' ? 'de SP' : NA_CASA[estado.ptCasa]}.</p></div>`;
+    const G = mediaGeral();
+    const casas = CASAS.map(([c, r]) => [r, x.membros.filter((p) => p.casa === c).length]).filter(([, n]) => n).map(([r, n]) => `${r} ${n}`).join(' · ');
+    const delta = (v, ref, maiorMelhor, f) => {
+      if (v == null || ref == null) return '';
+      const d = v - ref;
+      const bom = maiorMelhor ? d >= 0 : d <= 0;
+      return `<span class="pt-delta ${Math.abs(d) < 1e-9 ? '' : bom ? 'bom' : 'ruim'}">${f(d)} vs média</span>`;
+    };
+    const itens = [
+      ['Score médio', n1(x.score), delta(x.score, G.score, true, n1s), x.score != null ? cor(x.score) : null],
+      ['Presença média', pct(x.presenca, 1), delta(x.presenca, G.presenca, true, (d) => n1s(d * 100) + ' p.p.')],
+      [umaCasa() ? 'Cota por mês' : 'Cota vs mediana da casa', umaCasa() ? brlMil(x.cota) : pctS(x.cotaIdx), umaCasa() ? delta(x.cota, G.cota, false, (d) => (d >= 0 ? '+' : '−') + brlMil(Math.abs(d))) : delta(x.cotaIdx, G.cotaIdx, false, (d) => n1s(d * 100) + ' p.p.')],
+      ['Pautas prioritárias', n1(x.prioPor), delta(x.prioPor, G.prioPor, true, n1s) || '', null, 'projetos por parlamentar'],
+      ['Projetos simbólicos', pct(x.simb), delta(x.simb, G.simb, false, (d) => n1s(d * 100) + ' p.p.')],
+    ];
+    const membros = [...x.membros].sort((a, b) => (scoreCom(b) ?? -1) - (scoreCom(a) ?? -1));
+    return `<div class="cartao pt-ficha">
+      <header class="pt-ficha-cab">
+        <div><h2>${esc(x.sigla)}</h2><p class="muted">${fmt(x.n)} parlamentar${x.n > 1 ? 'es' : ''}${estado.ptCasa === 'todas' ? ` · ${casas}` : ` ${NA_CASA[estado.ptCasa]}`}${x.valido ? '' : ' · com uma só pessoa, a média não representa o partido'}</p></div>
+        <button type="button" class="btn" data-pt-limpar>Fechar</button>
+      </header>
+      <dl class="numeros pt-ficha-num">${itens.map(([r, v, d, c, sub]) => `<div><dd${c ? ` style="color:${c}"` : ''}>${v}</dd><dt>${r}</dt>${sub ? `<span>${sub}</span>` : ''}${d}</div>`).join('')}</dl>
+      <h4 class="sub-titulo">Parlamentares do ${esc(x.sigla)}</h4>
+      <ul class="pt-membros">${membros.slice(0, estado.ptMembros ? Infinity : 12).map((p) => { const v = scoreCom(p); return `<li><a href="#p-${esc(p.id)}">${foto(p)}<span><b>${esc(p.nome)}</b><small>${rotCasa(p.casa)}</small></span><span class="pt-m-score" style="color:${cor(v)}">${v == null ? '–' : n1(v)}</span></a></li>`; }).join('')}</ul>
+      ${membros.length > 12 ? `<button type="button" class="ver-todos" data-pt-membros>${estado.ptMembros ? 'Mostrar menos' : `Ver os ${membros.length} parlamentares`}</button>` : ''}
+    </div>`;
+  }
+
+  function destaquesPartidos(V) {
+    const ok = (f) => V.filter((x) => f(x) != null);
+    const ext = (f, asc) => ok(f).sort((a, b) => (asc ? f(a) - f(b) : f(b) - f(a)))[0];
+    const cartao = (x, rotulo, valor, sub) => (x ? `<button type="button" class="pt-dest" data-partido-foco="${esc(x.sigla)}" data-pt="${esc(x.sigla)}">
+      <span class="pt-dest-rot">${rotulo}</span><span class="pt-dest-sigla${x.sigla.length > 8 ? ' l2' : x.sigla.length > 5 ? ' l1' : ''}">${esc(x.sigla)}</span><span class="pt-dest-val">${valor}</span><span class="pt-dest-sub">${sub(x)}</span></button>` : '');
+    const nP = (x) => `${x.n} parlamentar${x.n > 1 ? 'es' : ''}`;
+    const bons = [
+      cartao(ext((x) => x.score), 'Maior score médio', n1(ext((x) => x.score)?.score), nP),
+      cartao(ext((x) => x.cotaIdx, true), 'Gasta menos na cota', fmtCota(ext((x) => x.cotaIdx, true) || {}), nP),
+      cartao(ext((x) => x.prioPor), 'Mais pautas prioritárias', `${n1(ext((x) => x.prioPor)?.prioPor)} por parlamentar`, nP),
+    ];
+    const ruins = [
+      cartao(ext((x) => x.score, true), 'Menor score médio', n1(ext((x) => x.score, true)?.score), nP),
+      cartao(ext((x) => x.cotaIdx), 'Gasta mais na cota', fmtCota(ext((x) => x.cotaIdx) || {}), nP),
+      cartao(ext((x) => x.simb), 'Mais projetos simbólicos', `${pct(ext((x) => x.simb)?.simb)} dos projetos`, nP),
+    ];
+    if (V.length < 2) return '<p class="vazio">Poucos partidos para comparar nesta casa.</p>';
+    return `<div class="podios">
+      <section class="podio bem"><div class="podio-titulo"><h3>Manda Bem</h3><p>Melhores médias</p></div><div class="pt-dest-grade">${bons.join('')}</div></section>
+      <section class="podio serio"><div class="podio-titulo"><h3>Sério mesmo???</h3><p>Piores médias</p></div><div class="pt-dest-grade">${ruins.join('')}</div></section>
+    </div>`;
+  }
+
+  function mapaPartidos(V) {
+    const L = V.filter((x) => x.score != null && x.cotaIdx != null);
+    if (L.length < 2) return '<p class="vazio">Poucos partidos para montar o mapa nesta casa.</p>';
+    const estreito = window.innerWidth < 640;
+    const W = estreito ? 420 : 960, H = estreito ? 460 : 520;
+    const m = { l: estreito ? 36 : 52, r: 16, t: 16, b: estreito ? 52 : 56 };
+    const ax = Math.max(0.15, ...L.map((x) => Math.abs(x.cotaIdx))) * 1.2;
+    const ys = L.map((x) => x.score);
+    const y0 = Math.max(0, Math.floor((Math.min(45, ...ys) - 4) / 5) * 5);
+    const y1 = Math.min(100, Math.ceil((Math.max(55, ...ys) + 4) / 5) * 5);
+    const X = (v) => m.l + ((v + ax) / (2 * ax)) * (W - m.l - m.r);
+    const Y = (v) => m.t + (1 - (v - y0) / (y1 - y0)) * (H - m.t - m.b);
+    const maxN = Math.max(...L.map((x) => x.n));
+    const R = (n) => (estreito ? 6 : 9) + (estreito ? 14 : 22) * Math.sqrt(n / maxN);
+    const cx = X(0), cy = Y(50);
+    const passo = ax > 0.6 ? 0.25 : ax > 0.3 ? 0.1 : 0.05;
+    const tx = [];
+    for (let v = -Math.floor(ax / passo) * passo; v <= ax + 1e-9; v += passo) tx.push(Math.round(v * 100) / 100);
+    const ty = [];
+    for (let v = y0; v <= y1; v += y1 - y0 > 40 ? 10 : 5) ty.push(v);
+    const fs = estreito ? 11 : 12;
+    const quad = (x, y, anchor, txt, cls) => `<text x="${x}" y="${y}" text-anchor="${anchor}" class="pt-quad ${cls}">${txt}</text>`;
+    // rótulos: dentro da bolha quando cabe; senão ao lado, com desvio simples de colisão
+    const ordem = [...L].sort((a, b) => b.n - a.n);
+    // rótulos: testa posições em volta da bolha e fica com a primeira livre
+    const bate = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
+    const bolhas = ordem.map((x) => { const r = R(x.n); return [X(x.cotaIdx) - r * 0.8, Y(x.score) - r * 0.8, r * 1.6, r * 1.6, x.sigla]; });
+    const colocados = [];
+    const rotulos = [...ordem].reverse().map((x) => {
+      const r = R(x.n), bx = X(x.cotaIdx), by = Y(x.score);
+      const w = x.sigla.length * fs * 0.66, h = fs + 2;
+      const cands = [];
+      if (r * 2 > w + 8) cands.push([bx - w / 2, by - h / 2, true]);
+      cands.push([bx + r + 4, by - h / 2], [bx - r - 4 - w, by - h / 2], [bx - w / 2, by - r - 3 - h], [bx - w / 2, by + r + 3],
+        [bx + r * 0.7, by - r * 0.7 - h], [bx + r * 0.7, by + r * 0.7], [bx - r * 0.7 - w, by - r * 0.7 - h], [bx - r * 0.7 - w, by + r * 0.7]);
+      const livre = (c) => { const k = [c[0], c[1], w, h]; return k[0] >= m.l && k[0] + w <= W - m.r && k[1] >= m.t && k[1] + h <= H - m.b
+        && !colocados.some((o) => bate(o, k)) && !bolhas.some((b) => b[4] !== x.sigla && bate(b, k)); };
+      const c = cands.find(livre) || cands.find((c2) => !colocados.some((o) => bate(o, [c2[0], c2[1], w, h]))) || cands[0];
+      colocados.push([c[0], c[1], w, h]);
+      return { x, tx: c[0] + w / 2, ty: c[1] + h - 3, dentro: !!c[2] };
+    });
+    return `<svg class="pt-mapa" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa dos partidos: score médio por gasto na cota em relação à mediana">
+      <rect x="${m.l}" y="${m.t}" width="${cx - m.l}" height="${cy - m.t}" class="pt-q-bom"/>
+      <rect x="${cx}" y="${cy}" width="${W - m.r - cx}" height="${H - m.b - cy}" class="pt-q-ruim"/>
+      ${ty.map((v) => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" class="pt-grade"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end" class="pt-eixo">${v}</text>`).join('')}
+      ${tx.map((v) => `<line y1="${m.t}" y2="${H - m.b}" x1="${X(v)}" x2="${X(v)}" class="pt-grade"/><text x="${X(v)}" y="${H - m.b + 18}" text-anchor="middle" class="pt-eixo">${v === 0 ? 'mediana' : pctS(v)}</text>`).join('')}
+      <line x1="${cx}" x2="${cx}" y1="${m.t}" y2="${H - m.b}" class="pt-meio"/><line x1="${m.l}" x2="${W - m.r}" y1="${cy}" y2="${cy}" class="pt-meio"/>
+      ${quad(m.l + 10, m.t + 20, 'start', 'Entrega mais e gasta menos', 'bom')}
+      ${quad(W - m.r - 10, H - m.b - 12, 'end', 'Entrega menos e gasta mais', 'ruim')}
+      ${estreito ? '' : quad(W - m.r - 10, m.t + 20, 'end', 'Entrega mais e gasta mais', '') + quad(m.l + 10, H - m.b - 12, 'start', 'Entrega menos e gasta menos', '')}
+      <text x="${m.l}" y="${H - 8}" class="pt-eixo-t">← gasta menos</text><text x="${W - m.r}" y="${H - 8}" text-anchor="end" class="pt-eixo-t">gasta mais →</text>
+      <text x="${m.l - (estreito ? 28 : 40)}" y="${m.t - 2}" class="pt-eixo-t" transform="rotate(-90 ${m.l - (estreito ? 28 : 40)} ${m.t - 2})" text-anchor="end">score médio</text>
+      ${ordem.map((x) => `<g class="pt-bolha" data-pt="${esc(x.sigla)}" data-partido-foco="${esc(x.sigla)}" tabindex="0" role="button" aria-label="${esc(x.sigla)}: score ${n1(x.score)}, cota ${pctS(x.cotaIdx)} da mediana">
+        <title>${esc(x.sigla)} · ${x.n} parlamentares · score médio ${n1(x.score)} · cota ${fmtCota(x)}</title>
+        <circle cx="${X(x.cotaIdx)}" cy="${Y(x.score)}" r="${R(x.n)}" style="fill:${cor(x.score)}"/></g>`).join('')}
+      ${rotulos.map((r) => `<text x="${r.tx}" y="${r.ty}" text-anchor="middle" class="pt-rot${r.dentro ? ' dentro' : ''}" data-pt="${esc(r.x.sigla)}" style="font-size:${fs}px">${esc(r.x.sigla)}</text>`).join('')}
+    </svg>`;
+  }
+
+  function dispersaoScore(L) {
+    if (!L.length) return '<p class="vazio">Sem score para comparar.</p>';
+    return `<div class="pt-disp">
+      <div class="pt-disp-eixo" aria-hidden="true"><span></span><span class="pt-escala">${[0, 25, 50, 75, 100].map((v) => `<i style="left:${v}%">${v}</i>`).join('')}</span><span></span></div>
+      ${L.map((x) => `<div class="pt-disp-linha" data-pt="${esc(x.sigla)}">
+        <button type="button" class="pt-sigla" data-partido-foco="${esc(x.sigla)}">${esc(x.sigla)}<small>${x.n}</small></button>
+        <span class="pt-trilho">
+          <i class="pt-mediana" style="left:50%"></i>
+          <i class="pt-media" style="width:${x.score}%;background:${cor(x.score)}"></i>
+          ${x.membros.map((p) => { const v = scoreCom(p); return v == null ? '' : `<a class="pt-ponto" href="#p-${esc(p.id)}" style="left:${v}%" title="${esc(p.nome)} (${rotCasa(p.casa)}): ${n1(v)}"><span class="visualmente-oculto">${esc(p.nome)}</span></a>`; }).join('')}
+        </span>
+        <span class="pt-valor" style="color:${cor(x.score)}">${n1(x.score)}</span>
+      </div>`).join('')}
+      <div class="legenda"><span style="--c:var(--good)">Média 60 ou mais</span><span style="--c:var(--mid)">40 a 60</span><span style="--c:var(--bad)">Abaixo de 40</span><span class="leg-ponto">Cada parlamentar</span></div>
+    </div>`;
+  }
+
+  function gastosPartidos(V) {
+    const L = V.filter((x) => x.cotaIdx != null).sort((a, b) => b.cotaIdx - a.cotaIdx);
+    if (!L.length) return '<p class="vazio">Sem dados de cota.</p>';
+    const ax = Math.max(0.1, ...L.map((x) => Math.abs(x.cotaIdx)));
+    return `<div class="pt-barras">
+      <div class="pt-div-cab" aria-hidden="true"><span></span><span><b class="bom">gasta menos</b><b>mediana</b><b class="ruim">gasta mais</b></span><span></span></div>
+      ${L.map((x) => {
+        const w = (Math.abs(x.cotaIdx) / ax) * 50;
+        return `<div class="pt-div-linha" data-pt="${esc(x.sigla)}">
+          <button type="button" class="pt-sigla" data-partido-foco="${esc(x.sigla)}">${esc(x.sigla)}<small>${x.n}</small></button>
+          <span class="pt-div"><i class="${x.cotaIdx > 0 ? 'ruim' : 'bom'}" style="${x.cotaIdx > 0 ? 'left' : 'right'}:50%;width:${w}%"></i></span>
+          <span class="pt-valor"><b class="${x.cotaIdx > 0 ? 'ruim' : 'bom'}">${pctS(x.cotaIdx)}</b>${umaCasa() && x.cota != null ? `<small>${brlMil(x.cota)}/mês</small>` : ''}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function pautasPartidos(V) {
+    const L = V.filter((x) => x.normativas > 0).sort((a, b) => b.prioPor - a.prioPor);
+    if (!L.length) return '<p class="vazio">Sem projetos no período.</p>';
+    const cores = { prio: 'var(--accent)', rel: 'color-mix(in srgb, var(--accent) 45%, var(--surface))', comp: 'color-mix(in srgb, var(--faint) 45%, var(--surface))', neg: 'var(--coral)' };
+    return `<div class="pt-barras">
+      ${L.map((x) => {
+        const tot = soma(x.grupos) || 1;
+        return `<div class="pt-pauta-linha" data-pt="${esc(x.sigla)}">
+          <button type="button" class="pt-sigla" data-partido-foco="${esc(x.sigla)}">${esc(x.sigla)}<small>${x.n}</small></button>
+          <span class="pt-pilha" title="${esc(x.sigla)}: ${x.grupos.prio} prioritários, ${x.grupos.rel} relevantes, ${x.grupos.comp} complementares, ${x.grupos.neg} simbólicos">
+            ${['prio', 'rel', 'comp', 'neg'].map((k) => (x.grupos[k] ? `<i style="width:${(x.grupos[k] / tot) * 100}%;background:${cores[k]}"></i>` : '')).join('')}
+          </span>
+          <span class="pt-valor"><b>${n1(x.prioPor)}</b><small>prioritários/parl.</small></span>
+        </div>`;
+      }).join('')}
+      <div class="legenda"><span style="--c:${cores.prio}">Prioritários</span><span style="--c:${cores.rel}">Relevantes</span><span style="--c:${cores.comp}">Complementares</span><span style="--c:${cores.neg}">Simbólicos</span></div>
+    </div>`;
+  }
+
+  function tabelaPartidos(L = dadosPartidos()) {
+    const cols = [
+      ['n', 'Parlamentares', (x) => x.n, fmt, 'neutro'],
+      ['score', 'Score médio', (x) => x.score, n1, 'maior'],
+      ['presenca', 'Presença', (x) => x.presenca, (v) => pct(v, 1), 'maior'],
+      ['cotaIdx', umaCasa() ? 'Cota por mês' : 'Cota vs mediana', (x) => x.cotaIdx, (v, x) => (umaCasa() ? brlMil(x.cota) : pctS(v)), 'menor'],
+      ['projPor', 'Projetos substantivos', (x) => x.projPor, n1, 'maior'],
+      ['prioPor', 'Pautas prioritárias', (x) => x.prioPor, n1, 'maior'],
+      ['aprovPor', 'Aprovados', (x) => x.aprovPor, n1, 'maior'],
+      ['simb', 'Simbólicos', (x) => x.simb, (v) => pct(v), 'menor'],
+      ['fiscPor', 'Fiscalização', (x) => x.fiscPor, n1, 'maior'],
+    ];
+    const [k, dir] = estado.ptOrdem;
+    const col = cols.find((c) => c[0] === k) || cols[1];
+    const lista = [...L].sort((a, b) => {
+      if (a.valido !== b.valido) return a.valido ? -1 : 1;
+      const va = col[2](a), vb = col[2](b);
+      if (va == null) return 1; if (vb == null) return -1;
+      return dir === 'asc' ? va - vb : vb - va;
+    });
+    const ext = Object.fromEntries(cols.map(([key, , f]) => { const vs = L.filter((x) => x.valido).map(f).filter((v) => v != null); return [key, [Math.min(...vs), Math.max(...vs)]]; }));
+    const larg = (key, v) => {
+      const [a, b] = ext[key];
+      if (v == null || !Number.isFinite(a) || !b) return 0;
+      return a >= 0 ? (v / b) * 100 : b === a ? 100 : ((v - a) / (b - a)) * 100;
+    };
+    return `<div class="pt-tabela-rolagem"><table class="pt-tabela">
+      <thead><tr><th scope="col">Partido</th>${cols.map(([key, r]) => `<th scope="col" aria-sort="${key === k ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}"><button type="button" data-pt-ord="${key}">${r}${key === k ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`).join('')}</tr></thead>
+      <tbody>${lista.map((x) => `<tr data-pt="${esc(x.sigla)}"${x.valido ? '' : ' class="pt-fraco"'}>
+        <th scope="row"><button type="button" class="pt-sigla" data-partido-foco="${esc(x.sigla)}">${esc(x.sigla)}</button></th>
+        ${cols.map(([key, , f, fm, sentido]) => { const v = f(x); return `<td><span class="pt-cel ${sentido}" style="--w:${x.valido ? larg(key, v) : 0}%">${fm(v, x)}</span></td>`; }).join('')}
+      </tr>`).join('')}</tbody></table></div>
+      ${L.some((x) => !x.valido) ? '<p class="pt-nota">Em cinza, partidos com um só parlamentar.</p>' : ''}`;
+  }
+
+  function aplicarFoco() {
+    const f = estado.ptFoco;
+    document.querySelectorAll('#pg-partidos [data-pt]').forEach((el) => {
+      el.classList.toggle('apagado', !!f && el.dataset.pt !== f);
+      el.classList.toggle('em-foco', !!f && el.dataset.pt === f);
+    });
+    document.querySelectorAll('#pt-chips [data-partido-foco]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.partidoFoco === f));
+    const fl = $('#pt-flut');
+    if (fl) { fl.hidden = !f; fl.innerHTML = f ? flutuante() : ''; }
+  }
+  function atualizarFoco() {
+    rerender('pt-ficha', fichaPartido);
+    aplicarFoco();
+    history.replaceState(null, '', '#partidos' + (estado.ptFoco ? ':' + encodeURIComponent(estado.ptFoco) : ''));
   }
 
   // ================= Metodologia =================
@@ -650,6 +1005,11 @@
       app.innerHTML = '<p class="vazio">Carregando…</p>';
       html = await viewTipo(estado.casa, dados.tipos?.[tipo] ? tipo : 'lei', dados.temas?.[tema] ? tema : '');
       nav = 'tipo';
+    } else if (h === 'partidos' || h.startsWith('partidos:')) {
+      const sigla = h.split(':')[1] || '';
+      if (sigla) { estado.ptFoco = sigla; estado.ptCasa = 'todas'; }
+      html = viewPartidos();
+      nav = 'partidos';
     } else if (h === 'metodologia') {
       html = viewMetodologia();
       nav = 'metodologia';
@@ -658,6 +1018,7 @@
       html = viewInicio();
     }
     app.innerHTML = html;
+    if (nav === 'partidos') aplicarFoco();
     document.querySelectorAll('[data-nav]').forEach((a) => (a.dataset.nav === nav ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
     $('[data-nav="tipo"]').setAttribute('href', `#tipo-${estado.casa}-lei`);
     if (rolar) document.getElementById(rolar)?.scrollIntoView();
@@ -674,6 +1035,20 @@
     const app = $('#app');
     app.addEventListener('click', (e) => {
       const t = e.target;
+      const ptc = t.closest('[data-pt-casa]');
+      if (ptc) { estado.ptCasa = ptc.dataset.ptCasa; rerender('pg-partidos', conteudoPartidos); aplicarFoco(); return; }
+      const pf = t.closest('[data-partido-foco]');
+      if (pf) { const s = pf.dataset.partidoFoco; estado.ptFoco = estado.ptFoco === s ? '' : s; estado.ptMembros = false; atualizarFoco(); return; }
+      if (t.closest('[data-pt-membros]')) { estado.ptMembros = !estado.ptMembros; rerender('pt-ficha', fichaPartido); return; }
+      if (t.closest('[data-pt-limpar]')) { estado.ptFoco = ''; atualizarFoco(); return; }
+      if (t.closest('[data-pt-ver]')) { $('#pt-ficha')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      const po = t.closest('[data-pt-ord]');
+      if (po) {
+        const k = po.dataset.ptOrd;
+        const menor = k === 'cotaIdx' || k === 'simb';
+        estado.ptOrdem = estado.ptOrdem[0] === k ? [k, estado.ptOrdem[1] === 'asc' ? 'desc' : 'asc'] : [k, menor ? 'asc' : 'desc'];
+        rerender('pt-tabela', tabelaPartidos); aplicarFoco(); return;
+      }
       const podio = t.closest('[data-podio]');
       if (podio) { estado.podio = podio.dataset.podio; rerender('sec-podios', podios); return; }
       const casa = t.closest('[data-casa]');
@@ -732,6 +1107,10 @@
         rerender('ranking', linhasRanking);
       }
       if (t.id === 'tema-props') { estado.perfil.tema = t.value; estado.perfil.limite = 15; rerender('props', listaPropsPerfil); }
+    });
+    app.addEventListener('keydown', (e) => {
+      const g = e.target.closest?.('g[data-partido-foco]');
+      if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
     });
     window.addEventListener('hashchange', rota);
   }
