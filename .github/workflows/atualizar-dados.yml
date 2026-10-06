@@ -46,7 +46,9 @@ jobs:
           restore-keys: coleta-
 
       - name: Coletar e calcular score
-        run: node --max-old-space-size=6144 scripts/build-data.js --casas=${{ github.event.inputs.casas || 'camara,senado,alesp' }}
+        run: |
+          set -o pipefail
+          node --max-old-space-size=6144 scripts/build-data.js --casas=${{ github.event.inputs.casas || 'camara,senado,alesp' }} 2>&1 | tee /tmp/coleta.log
 
       - name: Publicar dados no repositório
         run: |
@@ -60,3 +62,19 @@ jobs:
             git pull --rebase origin main
             git push
           fi
+
+      # Guarda o log da coleta no branch "logs" (útil para auditoria e depuração)
+      - name: Publicar log
+        if: always()
+        run: |
+          mkdir -p /tmp/logs && cd /tmp/logs
+          cp /tmp/coleta.log "coleta-$(date -u +%Y-%m-%dT%H%M).log" 2>/dev/null || echo "sem log" > "coleta-$(date -u +%Y-%m-%dT%H%M).log"
+          cp "$(ls coleta-*.log | tail -1)" ultima.log
+          git init -q -b logs
+          git config user.name "placar-bot"
+          git config user.email "placar-bot@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git fetch -q --depth 1 origin logs && git reset -q --soft origin/logs || true
+          git add -A
+          git commit -qm "log ${{ github.run_id }} (${{ job.status }})"
+          git push -q origin logs
