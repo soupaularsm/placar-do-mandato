@@ -1,0 +1,14 @@
+     97 foto
+      8 urlFotoFinal
+      3 Foto
+      2 linkDaFoto
+      2 imagemDaFoto
+      2 apiParlamentarFoto
+      1 imagem
+      1 data.biografia.txFotoGrande.substring
+      1 data.biografia.txFotoGrande
+      1 dadosDoParlamentar.biografia.txFotoGrande.substring
+      1 apiParlamentarFoto.includes
+      1 Fotos
+      1 /deputado/fotos/deputadosFotos.css
+      1 .txFotoGrande

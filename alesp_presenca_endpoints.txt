@@ -1,0 +1,12 @@
+"#carregandoPresenca"
+"carregandoPresenca"
+"https://www.al.sp.gov.br/deputado/presenca-plenario"
+"listaPresenca"
+"loading-presenca"
+"tabelaPresenca"
+"tbodyDadosPresenca"
+'#tabelaPresenca #tbodyDadosPresenca'
+'#tbodyDadosPresenca'
+'https://legis-api-portal-prd.al.sp.gov.br/lista-presenca-parlamentar/'
+'https://legis-api-portal-prd.al.sp.gov.br/lista-presenca-parlamentar/mesesAnosMandatosParlamentar/'
+'https://legis-api-portal-prd.al.sp.gov.br/lista-presenca-parlamentar/parlamentares/'

@@ -1,0 +1,8 @@
+/ruxitagentjs_ICA7NVfgqrux_10329260115094557.js
+https://cdn.cookielaw.org/consent/d81776c2-ce60-4a3d-ac67-68daf059afc0/OtAutoBlock.js
+https://cdn.cookielaw.org/scripttemplates/otSDKStub.js
+/_assets/vendor/js/bootstrap.bundle.min.js
+/_assets/vendor/js/jquery-3.6.0.min.js
+/_assets/vendor/js/jquery-ui.js
+/_assets/vendor/js/jquery.touchSwipe.min.js
+/_assets/js/globals.js

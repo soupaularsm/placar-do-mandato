@@ -1,0 +1,40 @@
+     32 <NomeUA>Gabinete do Deputado ENIO TATTO</NomeUA>
+     30 <NomeUA>Gabinete do Deputado RODRIGO MORAES</NomeUA>
+     30 <NomeUA>Gabinete do Deputado LUIZ FERNANDO T. FERREIRA</NomeUA>
+     30 <NomeUA>Gabinete do Deputado BARROS MUNHOZ</NomeUA>
+     29 <NomeUA>Gabinete do Deputado RAFA ZIMBALDI</NomeUA>
+     29 <NomeUA>Gabinete do Deputado CARLÃO PIGNATARI</NomeUA>
+     28 <NomeUA>Gabinete do Deputado PAULO FIORILO</NomeUA>
+     28 <NomeUA>Gabinete do Deputado MARCIO NAKASHIMA</NomeUA>
+     27 <NomeUA>Gabinete do Deputado VITÃO DO CACHORRÃO</NomeUA>
+     27 <NomeUA>Gabinete do Deputado MÁRCIA LIA</NomeUA>
+     27 <NomeUA>Gabinete do Deputado MARCOS DAMASIO</NomeUA>
+     27 <NomeUA>Gabinete do Deputado DR. ELTON</NomeUA>
+     27 <NomeUA>Gabinete do Deputado ANALICE FERNANDES</NomeUA>
+     26 <NomeUA>Gabinete do Deputado THAINARA FARIA</NomeUA>
+     26 <NomeUA>Gabinete do Deputado REIS</NomeUA>
+     26 <NomeUA>Gabinete do Deputado EMÍDIO DE SOUZA</NomeUA>
+     26 <NomeUA>Gabinete do Deputado DR. JORGE DO CARMO</NomeUA>
+     26 <NomeUA>Gabinete do Deputado DR. EDUARDO NÓBREGA</NomeUA>
+     26 <NomeUA>Gabinete do Deputado DIRCEU DALBEN</NomeUA>
+     26 <NomeUA>Gabinete do Deputado CARLA MORANDO</NomeUA>
+     25 <NomeUA>Gabinete do Deputado VALDOMIRO LOPES</NomeUA>
+     25 <NomeUA>Gabinete do Deputado TEONILIO BARBA</NomeUA>
+     25 <NomeUA>Gabinete do Deputado RICARDO MADALENA</NomeUA>
+     25 <NomeUA>Gabinete do Deputado MAURO BRAGATO</NomeUA>
+     25 <NomeUA>Gabinete do Deputado MARCELO AGUIAR</NomeUA>
+     25 <NomeUA>Gabinete do Deputado EDNA MACEDO</NomeUA>
+     25 <NomeUA>Gabinete do Deputado DANI ALONSO</NomeUA>
+     25 <NomeUA>Gabinete do Deputado CAIO FRANÇA</NomeUA>
+     25 <NomeUA>Gabinete do Deputado ATILA JACOMUSSI</NomeUA>
+     24 <NomeUA>Gabinete do Deputado TENENTE COIMBRA</NomeUA>
+     24 <NomeUA>Gabinete do Deputado ROGÉRIO SANTOS</NomeUA>
+     24 <NomeUA>Gabinete do Deputado PROFESSORA BEBEL</NomeUA>
+     24 <NomeUA>Gabinete do Deputado MARIA LÚCIA AMARY</NomeUA>
+     24 <NomeUA>Gabinete do Deputado MAJOR MECCA</NomeUA>
+     24 <NomeUA>Gabinete do Deputado EDSON GIRIBONI</NomeUA>
+     24 <NomeUA>Gabinete do Deputado DRA. DAMARIS MOURA</NomeUA>
+     24 <NomeUA>Gabinete do Deputado CLARICE GANEM</NomeUA>
+     24 <NomeUA>Gabinete do Deputado BRUNO ZAMBELLI</NomeUA>
+     24 <NomeUA>Gabinete do Deputado ANA PERUGINI</NomeUA>
+     24 <NomeUA>Gabinete do Deputado ALEX MADUREIRA</NomeUA>

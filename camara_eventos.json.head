@@ -1,0 +1,112 @@
+{
+  "dados": [
+    {
+      "id": 83009,
+      "uri": "https://dadosabertos.camara.leg.br/api/v2/eventos/83009",
+      "urlDocumentoPauta": "https://www.camara.leg.br/internet/ordemdodia/mostrarIntegra.asp?CodTeor=3180471",
+      "dataHoraInicio": "2026-09-24T09:36:04",
+      "dataHoraFim": "2026-09-24T12:46:16",
+      "situacao": "Encerrada",
+      "descricao": "REQ 59/26, do Deputado Cobalchini (MDB / SC)\r\n\r\nConvidados:\r\n\r\nPAULO ANTUNES HORTA\r\nProfessor Associado da Universidade Federal de Santa Catarina - UFSC\r\n\r\nKENYA CARLA SIMÕES\r\nConsultora Legislativa da Área Ambiental\r\n\r\nRICARDO WEGRZYNOVSKI     \r\nJornalista e mestrando em Oceanografia pela Universidade Federal de Santa Catarina - UFSC",
+      "descricaoTipo": "Reunião Técnica",
+      "localExterno": "",
+      "localCamara": {
+        "nome": "Anexo II, Plenário 06",
+        "predio": "",
+        "sala": "",
+        "andar": ""
+      }
+    },
+    {
+      "id": 82893,
+      "uri": "https://dadosabertos.camara.leg.br/api/v2/eventos/82893",
+      "urlDocumentoPauta": "https://www.camara.leg.br/internet/ordemdodia/mostrarIntegra.asp?CodTeor=3180803",
+      "dataHoraInicio": "2026-09-17T09:41:00",
+      "dataHoraFim": "2026-09-17T10:27:00",
+      "situacao": "Encerrada",
+      "descricao": "Homenagem ao Dia do Ortopedista",
+      "descricaoTipo": "Sessão Não Deliberativa Solene",
+      "localExterno": "",
+      "localCamara": {
+        "nome": "Plenário da Câmara dos Deputados",
+        "predio": "",
+        "sala": "",
+        "andar": ""
+      }
+    },
+    {
+      "id": 82918,
+      "uri": "https://dadosabertos.camara.leg.br/api/v2/eventos/82918",
+      "urlDocumentoPauta": "https://www.camara.leg.br/internet/ordemdodia/mostrarIntegra.asp?CodTeor=3180061",
+      "dataHoraInicio": "2026-09-14T09:23:00",
+      "dataHoraFim": "2026-09-14T10:39:00",
+      "situacao": "Encerrada",
+      "descricao": "Homenagem às XXXIII Jornadas Latinoamericanas de Derecho Tributario",
+      "descricaoTipo": "Sessão Não Deliberativa Solene",
+      "localExterno": "",
+      "localCamara": {
+        "nome": "Plenário da Câmara dos Deputados",
+        "predio": "",
+        "sala": "",
+        "andar": ""
+      }
+    },
+    {
+      "id": 82970,
+      "uri": "https://dadosabertos.camara.leg.br/api/v2/eventos/82970",
+      "urlDocumentoPauta": "https://www.camara.leg.br/internet/ordemdodia/mostrarIntegra.asp?CodTeor=3178303",
+      "dataHoraInicio": "2026-09-04T10:24:53",
+      "dataHoraFim": "2026-09-04T10:34:11",
+      "situacao": "Encerrada (Final)",
+      "descricao": "AUDIENCIA PUBLICA TESTE\r\n\r\nCONVIDADOS A CONFIRMAR:\r\n\r\nCLARISSA\r\n\r\nMARCIO\r\n\r\nBRUNA\r\n\r\nMANU",
+      "descricaoTipo": "Audiência Pública",
+      "localExterno": "",
+      "localCamara": {
+        "nome": "Anexo II, Plenário 07",
+        "predio": "",
+        "sala": "",
+        "andar": ""
+      }
+    },
+    {
+      "id": 82965,
+      "uri": "https://dadosabertos.camara.leg.br/api/v2/eventos/82965",
+      "urlDocumentoPauta": "https://www.camara.leg.br/internet/ordemdodia/mostrarIntegra.asp?CodTeor=3177906",
+      "dataHoraInicio": "2026-09-03T15:55:00",
+      "dataHoraFim": "2026-09-03T17:29:00",
+      "situacao": "Encerrada",
+      "descricao": "Sessão Deliberativa Extraordinária Semipresencial (AM nº 123/2020)",
+      "descricaoTipo": "Sessão Deliberativa",
+      "localExterno": "",
+      "localCamara": {
+        "nome": "Plenário da Câmara dos Deputados",
+        "predio": "",
+        "sala": "",
+        "andar": ""
+      }
+    },
+    {
+      "id": 82898,
+      "uri": "https://dadosabertos.camara.leg.br/api/v2/eventos/82898",
+      "urlDocumentoPauta": "https://www.camara.leg.br/internet/ordemdodia/mostrarIntegra.asp?CodTeor=3172693",
+      "dataHoraInicio": "2026-09-02T15:04:53",
+      "dataHoraFim": "2026-09-02T16:12:51",
+      "situacao": "Encerrada",
+      "descricao": "Discussão e votação do Parecer do Relator, Dep. Aureo Ribeiro",
+      "descricaoTipo": "Reunião Deliberativa",
+      "localExterno": "",
+      "localCamara": {
+        "nome": "Anexo II, Plenário 02",
+        "predio": "",
+        "sala": "",
+        "andar": ""
+      }
+    },
+    {
+      "id": 82847,
+      "uri": "https://dadosabertos.camara.leg.br/api/v2/eventos/82847",
+      "urlDocumentoPauta": "https://www.camara.leg.br/internet/ordemdodia/mostrarIntegra.asp?CodTeor=3168972",
+      "dataHoraInicio": "2026-09-02T14:29:11",
+      "dataHoraFim": "2026-09-02T19:05:38",
+      "situacao": "Encerrada",
+      "descricao": "Expositores:\r\n\r\nAbertura:\r\n\r\nALEXANDRE SILVEIRA, Ministro de Minas e Energia (confirmado);\r\n\r\nGONÇALO PEREIRA, Professor Titular da Unicamp (confirmado);\r\n\r\nPLÍNIO NASTARI, Presidente da Datagro (confirmado);\r\n\r\nMARCELO MORAES, Coordenador do Monitor Energia do Futuro (confirmado);\r\n\r\nALEXANDRE ALONSO ALVES, Diretor de Negócios e Inovação Tecnológica da Embrapa (confirmado);\r\n\r\nPainel 1 - Etanol: Acelerando a Mobilidade de 

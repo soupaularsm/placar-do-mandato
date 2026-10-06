@@ -1,0 +1,54 @@
+{
+  "dados": [
+    {
+      "idEvento": 74889,
+      "uriEvento": "https://dadosabertos.camara.leg.br/api/v2/eventos/74889",
+      "dataHoraInicio": "2026-02-24T14:43:23",
+      "idDeputado": 74374,
+      "uriDeputado": "https://dadosabertos.camara.leg.br/api/v2/deputados/74374"
+    },
+    {
+      "idEvento": 74889,
+      "uriEvento": "https://dadosabertos.camara.leg.br/api/v2/eventos/74889",
+      "dataHoraInicio": "2026-02-24T14:43:23",
+      "idDeputado": 74585,
+      "uriDeputado": "https://dadosabertos.camara.leg.br/api/v2/deputados/74585"
+    },
+    {
+      "idEvento": 74889,
+      "uriEvento": "https://dadosabertos.camara.leg.br/api/v2/eventos/74889",
+      "dataHoraInicio": "2026-02-24T14:43:23",
+      "idDeputado": 74856,
+      "uriDeputado": "https://dadosabertos.camara.leg.br/api/v2/deputados/74856"
+    },
+    {
+      "idEvento": 74889,
+      "uriEvento": "https://dadosabertos.camara.leg.br/api/v2/eventos/74889",
+      "dataHoraInicio": "2026-02-24T14:43:23",
+      "idDeputado": 123756,
+      "uriDeputado": "https://dadosabertos.camara.leg.br/api/v2/deputados/123756"
+    },
+    {
+      "idEvento": 74889,
+      "uriEvento": "https://dadosabertos.camara.leg.br/api/v2/eventos/74889",
+      "dataHoraInicio": "2026-02-24T14:43:23",
+      "idDeputado": 153423,
+      "uriDeputado": "https://dadosabertos.camara.leg.br/api/v2/deputados/153423"
+    },
+    {
+      "idEvento": 74889,
+      "uriEvento": "https://dadosabertos.camara.leg.br/api/v2/eventos/74889",
+      "dataHoraInicio": "2026-02-24T14:43:23",
+      "idDeputado": 160518,
+      "uriDeputado": "https://dadosabertos.camara.leg.br/api/v2/deputados/160518"
+    },
+    {
+      "idEvento": 74889,
+      "uriEvento": "https://dadosabertos.camara.leg.br/api/v2/eventos/74889",
+      "dataHoraInicio": "2026-02-24T14:43:23",
+      "idDeputado": 178929,
+      "uriDeputado": "https://dadosabertos.camara.leg.br/api/v2/deputados/178929"
+    },
+    {
+      "idEvento": 74889,
+      "uriEvento": "https://dadosabertos.camara.l
