@@ -1,4 +1,4 @@
-# Placar do Mandato SP
+# Mandato Aberto — placar dos parlamentares de SP
 
 No ar em **https://www.mandatoaberto.site** (Vercel, deploy automático a cada commit no `main`).
 
