@@ -56,7 +56,7 @@
   const tiposCache = {};
   const estado = {
     casa: 'camara', busca: '', partido: '', ordem: 'score', tema: '',
-    podio: 'todas', pesosAbertos: false, todosTemas: false,
+    podio: 'todas', pesosAbertos: false, todosTemas: false, rankLimite: 20,
     perfil: { filtro: 'todas', tema: '', limite: 15, lista: [] },
   };
 
@@ -117,7 +117,7 @@
       const tam = 13 + 8 * (Math.log(n + 1) / max);
       const conteudo = `${esc(rotTipo(t))} <b>${fmt(n)}</b>`;
       return links
-        ? `<a href="#tipo-${casa}-${t}" style="font-size:${tam.toFixed(1)}px">${conteudo}</a>`
+        ? `<a href="#tipo-${casa}-${t}" style="--fs:${tam.toFixed(1)}px">${conteudo}</a>`
         : `<span class="tag" style="font-size:${Math.min(tam, 16).toFixed(1)}px;padding:.4em .9em">${conteudo}</span>`;
     }).join('')}</div>`;
   }
@@ -212,7 +212,7 @@
       </div>
       <div class="faixa"><div class="wrap secao" id="sec-podios">${podios()}</div></div>
       <div class="wrap secao" id="sec-esforco">${secaoEsforco()}</div>
-      <div class="wrap secao" id="sec-ranking" style="padding-top:8px">${secaoRanking()}</div>`;
+      <div class="wrap secao secao-div" id="sec-ranking">${secaoRanking()}</div>`;
   }
 
   function secaoEsforco() {
@@ -312,7 +312,9 @@
     }[ordem]);
     if (!lista.length) return '<li class="vazio">Ninguém encontrado com esses filtros.</li>';
     const chaves = Object.keys(dados.componentes);
-    return lista.map((p) => {
+    const total = lista.length;
+    const corte = estado.busca ? total : Math.min(total, estado.rankLimite);
+    return lista.slice(0, corte).map((p) => {
       const barras = chaves.map((k) => {
         const v = p.score.componentes[k];
         const rot = dados.componentes[k].rotulo;
@@ -332,7 +334,7 @@
         <span class="criterios" style="grid-template-columns:repeat(${chaves.length},1fr)" aria-label="Notas por critério">${barras}</span>
         <span class="dado"><b>${pct(p.presenca?.taxa)}</b><span>presença</span></span>
       </button></li>`;
-    }).join('');
+    }).join('') + (corte < total ? `<li class="ranking-mais"><button class="btn" data-rank-mais>Mostrar todos os ${total}</button></li>` : '');
   }
 
   // ================= Proposições por tipo =================
@@ -386,28 +388,30 @@
           <div class="chips" aria-label="Outros tipos de proposição">${tiposOrdenados.map(([t, n]) => `<a href="#tipo-${casa}-${t}"${t === tipo ? ' aria-current="page"' : ''}>${esc(rotTipo(t))} ${fmt(n)}</a>`).join('')}</div>
         </div>
 
-        <section class="cartao" style="margin-top:24px">
+        <div class="pilha">
+        <section class="cartao">
           <h3>${normativo ? 'Do protocolo à aprovação' : 'Quanto foi apresentado'}</h3>
           <p class="muted">${normativo ? `Situação atual de tudo o que a bancada de SP apresentou ${NA_CASA[casa]}${esc(sobre)}.` : `Total apresentado pelos ${daCasa(casa).length} parlamentares de SP. Este tipo não passa por votação de aprovação.`}</p>
           ${normativo ? funil(st) : `<div class="kpis"><div class="kpi"><b>${fmt(total)}</b><span>apresentados</span></div><div class="kpi"><b>${fmt(autores.length)}</b><span>parlamentares apresentaram</span></div><div class="kpi"><b>${autores.length ? fmt(Math.round(total / autores.length)) : 0}</b><span>em média por parlamentar</span></div></div>`}
         </section>
 
-        <div class="duas" style="margin-top:20px">
+        <div class="duas">
           ${normativo ? `<section class="cartao">
             <h3>Por tema</h3><p class="muted">Toque num tema para filtrar a página.</p>
             ${listaTemas(Object.entries(temas).map(([t, r]) => [t, r.total, r.aprovada || 0]).sort((a, b) => b[1] - a[1]), { href: (t) => (t === tema ? `#tipo-${casa}-${tipo}` : `#tipo-${casa}-${tipo}-${t}`), atual: tema })}
           </section>` : ''}
-          <section class="cartao"${normativo ? '' : ' style="grid-column:1 / -1"'}>
+          <section class="cartao${normativo ? '' : ' cheia'}">
             <h3>Quem mais apresenta</h3><p class="muted">${autores.length} de ${daCasa(casa).length} parlamentares de SP ${NA_CASA[casa]}.</p>
             <ul class="autores">${autores.slice(0, 10).map(({ p, n, ap }) => `<li><a href="#p-${esc(p.id)}">${foto(p)}<span><b>${esc(p.nome)}</b> <span class="sub">${esc(p.partido)}</span></span><span class="n">${fmt(n)}</span><span class="barra" aria-hidden="true"><i class="b-pos" style="width:${(n / autores[0].n) * 100}%"></i>${ap ? `<i class="b-aprov" style="width:${(ap / autores[0].n) * 100}%"></i>` : ''}</span></a></li>`).join('') || '<li class="vazio">Ninguém apresentou.</li>'}</ul>
           </section>
         </div>
 
-        <section class="cartao" style="margin-top:20px">
+        <section class="cartao">
           <h3>Mais recentes</h3>
           <p class="muted">${itens.length ? `Os ${itens.length} mais recentes da bancada de SP.` : 'Sem itens recentes para mostrar.'}</p>
           <ul class="props">${itens.map((x) => itemProposta(x, nomeDe.get(x.autor))).join('')}</ul>
         </section>
+        </div>
       </div>`;
   }
 
@@ -435,7 +439,7 @@
     const data = x.data ? new Date(x.data + 'T12:00').toLocaleDateString('pt-BR') : '';
     return `<li class="prop">
       <span class="ident">${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${id}</a>` : `<b>${id}</b>`}
-        ${autor ? `<a href="#p-${esc(autor.id)}" style="font-weight:600;color:var(--muted)">${esc(autor.nome)}</a>` : ''}
+        ${autor ? `<a href="#p-${esc(autor.id)}" class="autor">${esc(autor.nome)}</a>` : ''}
         ${data ? `<span>${data}</span>` : ''}${tema}</span>
       ${selo}
       <span class="em">${esc(x.ementa)}</span></li>`;
@@ -464,7 +468,7 @@
 
   function sparkline(serie) {
     const pts = serie.filter(([, v]) => v != null);
-    if (pts.length < 2) return '<p class="muted" style="margin-top:12px">A tendência aparece a partir da segunda semana de coleta.</p>';
+    if (pts.length < 2) return '<p class="muted spark-vazio">A tendência aparece a partir da segunda semana de coleta.</p>';
     const W = 300, H = 64, pad = 6;
     const vs = pts.map(([, v]) => v);
     const min = Math.min(...vs) - 2, max = Math.max(...vs) + 2;
@@ -562,17 +566,18 @@
           </div>
         </div>
 
+        <div class="pilha">
         ${faixaPresenca(p)}
         ${faixaCustos(p)}
 
         <div class="grade grade-2">
           <section class="cartao"><h3>Score por critério</h3><p class="muted">Nota de 0 a 100 em relação aos colegas da mesma casa. 50 é a mediana.</p>${comps}
-            <h3 style="margin-top:24px;font-size:17px">Tendência do score</h3>${sparkline(resumo.tendencia || [])}</section>
+            <h4 class="sub-titulo">Tendência do score</h4>${sparkline(resumo.tendencia || [])}</section>
           <section class="cartao">
             <h3>Onde está o esforço</h3>
             <p class="muted">${pr.normativas ? `${pct(fracSimb(pr))} dos projetos são simbólicos. Na bancada de SP ${NA_CASA[p.casa]}, ${pct(simbBancada)}.` : 'Sem projetos de lei, PECs ou decretos no período.'}</p>
             ${nuvemTipos(pr.por_tipo, p.casa, { links: false })}
-            <h3 style="margin-top:24px;font-size:17px">Temas dos projetos</h3>
+            <h4 class="sub-titulo">Temas dos projetos</h4>
             ${listaTemas(temasLinhas)}
           </section>
           <section class="cartao cheia">
@@ -580,12 +585,13 @@
             <p class="muted">${fmt(pr.normativas)} projetos de lei, PECs e decretos como primeiro autor (${fmt(pr.honorificas)} simbólicos), ${fmt(pr.fiscalizacao)} pedidos de fiscalização e ${fmt(pr.indicacoes)} indicações.</p>
             <div class="empilhada" role="img" aria-label="Situação dos projetos">${Object.entries(STATUS).map(([k, [r, cc]]) => (pr.por_status?.[k] ? `<i style="width:${(pr.por_status[k] / totalSt) * 100}%;background:${cc}" title="${r}: ${pr.por_status[k]}"></i>` : '')).join('')}</div>
             <div class="legenda">${Object.entries(STATUS).map(([k, [r, cc]]) => `<span style="--c:${cc}">${r} ${fmt(pr.por_status?.[k] || 0)}</span>`).join('')}</div>
-            <div class="chips" style="margin-top:18px;align-items:center" id="props-filtros">
+            <div class="chips filtros-props" id="props-filtros">
               ${[['todas', 'Todas'], ['normativa', 'Substantivas'], ['aprovada', 'Aprovadas'], ['honorifica', 'Simbólicas'], ['fiscalizacao', 'Fiscalização']].map(([k, r]) => `<button data-filtro="${k}" aria-pressed="${k === 'todas'}">${r}</button>`).join('')}
               <span class="campo"><label class="visualmente-oculto" for="tema-props">Tema</label><select id="tema-props"><option value="">Todos os temas</option>${temasLinhas.map(([t, n]) => `<option value="${t}">${esc(rotTema(t))} (${n})</option>`).join('')}</select></span>
             </div>
             <ul class="props" id="props">${listaPropsPerfil()}</ul>
           </section>
+        </div>
         </div>
       </div>`;
   }
@@ -672,7 +678,7 @@
       if (podio) { estado.podio = podio.dataset.podio; rerender('sec-podios', podios); return; }
       const casa = t.closest('[data-casa]');
       if (casa) {
-        estado.casa = casa.dataset.casa; estado.partido = ''; estado.todosTemas = false;
+        estado.casa = casa.dataset.casa; estado.partido = ''; estado.todosTemas = false; estado.rankLimite = 20;
         rerender('sec-esforco', secaoEsforco); rerender('sec-ranking', secaoRanking);
         $('[data-nav="tipo"]').setAttribute('href', `#tipo-${estado.casa}-lei`);
         return;
@@ -700,6 +706,7 @@
         rerender('props', listaPropsPerfil);
         return;
       }
+      if (t.closest('[data-rank-mais]')) { estado.rankLimite = Infinity; rerender('ranking', linhasRanking); return; }
       if (t.closest('[data-mais]')) { estado.perfil.limite += 30; rerender('props', listaPropsPerfil); }
     });
     app.addEventListener('input', (e) => {
