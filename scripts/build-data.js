@@ -96,7 +96,7 @@ async function main() {
       for (const m of sp) {
         // detalhe completo em arquivo próprio; o índice leva só o resumo
         gravar(path.join(OUT, 'p', `${m.id}.json`), { ...m, casa_nome: cfgCasa.nome });
-        const { lista, ...resumoProps } = m.proposicoes || {};
+        const { lista, recentes_por_tipo, ...resumoProps } = m.proposicoes || {};
         resultado.parlamentares.push({
           id: m.id, casa, nome: m.nome, partido: m.partido, foto: m.foto,
           presenca: m.presenca ? { taxa: m.presenca.taxa, sessoes: m.presenca.sessoes } : null,
@@ -106,6 +106,14 @@ async function main() {
             componentes: Object.fromEntries(Object.entries(m.score.componentes).map(([k, v]) => [k, v.percentil])) },
         });
       }
+      // recentes por tipo da bancada inteira, para a página de detalhamento
+      const recentes = {};
+      for (const m of sp) for (const [t, xs] of Object.entries(m.proposicoes?.recentes_por_tipo || {}))
+        for (const x of xs) (recentes[t] ??= []).push({ ...x, autor: m.id });
+      for (const t of Object.keys(recentes))
+        recentes[t] = recentes[t].sort((a, b) => String(b.data || b.ano).localeCompare(String(a.data || a.ano))).slice(0, 150);
+      gravar(path.join(OUT, `tipos-${casa}.json`), recentes);
+
       resultado.casas[casa] = {
         nome: cfgCasa.nome,
         atualizado_em: new Date().toISOString(),

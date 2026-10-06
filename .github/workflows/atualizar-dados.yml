@@ -49,6 +49,7 @@ jobs:
         run: |
           set -o pipefail
           node --max-old-space-size=6144 scripts/build-data.js --casas=${{ github.event.inputs.casas || 'camara,senado,alesp' }} 2>&1 | tee /tmp/coleta.log
+          node scripts/fotos.js 2>&1 | tee -a /tmp/coleta.log
 
       - name: Publicar dados no repositório
         run: |

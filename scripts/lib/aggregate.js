@@ -21,7 +21,9 @@ export function resumirProposicoes(lista, manterLista = false) {
     por_tipo: {},
     por_tema: {},
     por_tema_aprovadas: {},
+    por_tipo_tema_status: {}, // {tipo: {tema: {status: n}}} — só normativas
   };
+  const recentes = {}; // {tipo: [itens]}
   const detalhada = [];
   for (const p of lista) {
     const tipo = tipoDe(p.sigla, p.natureza, p.categoria);
@@ -35,6 +37,8 @@ export function resumirProposicoes(lista, manterLista = false) {
       r.por_status[p.status] = (r.por_status[p.status] || 0) + 1;
       r.por_tema[tema] = (r.por_tema[tema] || 0) + 1;
       if (p.status === 'aprovada') r.por_tema_aprovadas[tema] = (r.por_tema_aprovadas[tema] || 0) + 1;
+      const tt = ((r.por_tipo_tema_status[tipo] ??= {})[tema] ??= {});
+      tt[p.status] = (tt[p.status] || 0) + 1;
       if (tema === 'simbolica') r.honorificas++;
       else {
         r.substantivas++;
@@ -43,6 +47,13 @@ export function resumirProposicoes(lista, manterLista = false) {
     } else if (p.categoria === 'fiscalizacao') r.fiscalizacao++;
     else if (p.categoria === 'indicacao') r.indicacoes++;
     else r.outras++;
+
+    if (manterLista) {
+      (recentes[tipo] ??= []).push({
+        sigla: p.sigla, numero: p.numero, ano: p.ano, ementa: (p.ementa || '').slice(0, 280),
+        tema, status: p.categoria === 'normativa' ? p.status : null, data: p.data || null, url: p.url || null,
+      });
+    }
 
     if (manterLista && (p.categoria === 'normativa' || p.categoria === 'fiscalizacao')) {
       detalhada.push({
@@ -61,6 +72,10 @@ export function resumirProposicoes(lista, manterLista = false) {
     detalhada.sort((a, b) => String(b.data || b.ano).localeCompare(String(a.data || a.ano)));
     r.lista = detalhada.slice(0, 400);
     r.lista_truncada = detalhada.length > 400;
+    // as 12 mais recentes de cada tipo, para a página de detalhamento por tipo
+    r.recentes_por_tipo = Object.fromEntries(Object.entries(recentes).map(([t, xs]) => [
+      t, xs.sort((a, b) => String(b.data || b.ano).localeCompare(String(a.data || a.ano))).slice(0, 12),
+    ]));
   }
   return r;
 }
