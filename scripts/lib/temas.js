@@ -130,6 +130,8 @@ export const TIPOS = {
   emenda: 'Emenda ou substitutivo',
   parecer: 'Parecer como relator',
   destaque: 'Destaque ou recurso',
+  procedimento: 'Pedido de adiamento ou retirada de pauta',
+  orcamento: 'Sugestão de emenda ao orçamento',
   fiscalizacao: 'Pedido de informação e fiscalização',
   requerimento: 'Requerimento',
   indicacao: 'Indicação ao Executivo',
@@ -140,13 +142,15 @@ export const TIPOS = {
 export function tipoDe(sigla = '', natureza = '', categoria = '') {
   const s = String(sigla || '').toUpperCase();
   const n = norm(natureza);
-  if (categoria === 'fiscalizacao') return 'fiscalizacao';
+  if (categoria === 'fiscalizacao' || /^(SIT)$/.test(s)) return 'fiscalizacao';
+  if (/^(SLD|SOR|SPP|EMO|EMRP)$/.test(s) || /emenda (a|ao) (lei orcamentaria|orcamento|ldo|ppa)/.test(n)) return 'orcamento';
+  if (/^(RPD|RPDR)$/.test(s) || /adiamento|retirada de materia|inversao da pauta/.test(n)) return 'procedimento';
   if (categoria === 'indicacao' || /^(INC|INS|IND)$/.test(s) || /^indicac/.test(n)) return 'indicacao';
   if (/^(PEC)$/.test(s) || /emenda a constituicao|proposta de emenda/.test(n)) return 'pec';
   if (/^(PL|PLP|PLS|PLC|PLN|PLV)$/.test(s) || /^projeto de lei/.test(n)) return 'lei';
   if (/^(PDL|PDC|PDS|PRC|PRS|PR)$/.test(s) || /decreto legislativo|projeto de resolucao/.test(n)) return 'decreto';
-  if (/^(EM|EMC|EMP|EMA|EMR|EMS|ESB|EMD|EMO|EMRP|EAG|ERD|SBT|SBE|SSP|EMENDA)/.test(s) || /^emenda|substitutivo/.test(n)) return 'emenda';
-  if (/^(PRL|PRLP|PRLE|PAR|PPP|PRV|REL|RLP|PEP|PRO|PRR|VTS)$/.test(s) || /^parecer|relatorio|voto em separado/.test(n)) return 'parecer';
+  if (/^(EM|EMC|EMP|EMA|EMR|EMS|ESB|EMD|EAG|ERD|SBT|SBE|SSP|SBR|EMENDA)/.test(s) || /^emenda|substitutivo/.test(n)) return 'emenda';
+  if (/^(PRL|PRLP|PRLE|PAR|PPP|PRV|REL|RLP|PEP|PRO|PRR|VTS|RDF|CVO)$/.test(s) || /^parecer|relatorio|voto em separado/.test(n)) return 'parecer';
   if (/^(DTQ|DVT|REC|RCM|REM|DEN)$/.test(s) || /^destaque|^recurso/.test(n)) return 'destaque';
   if (/^(MOC|MOÇ)/.test(s) || /^mocao/.test(n)) return 'mocao';
   if (/^(REQ|RQS|RQN|RQC|RI|RIC|RCP|RQA|RQP)$/.test(s) || /^requerimento/.test(n)) return 'requerimento';
