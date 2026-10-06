@@ -3,7 +3,11 @@
 // Roda depois de build-data.js. Fotos já baixadas há menos de 30 dias são mantidas.
 import fs from 'node:fs';
 import path from 'node:path';
+import sharp from 'sharp';
 import { get, pool } from './lib/http.js';
+
+// Retrato quadrado de 320 px, leve o bastante para listas no celular
+const reduzir = (buf) => sharp(buf).rotate().resize(320, 320, { fit: 'cover', position: 'attention' }).jpeg({ quality: 78, mozjpeg: true }).toBuffer();
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const DATA = path.join(ROOT, 'public', 'data');
@@ -32,6 +36,10 @@ async function candidatas(p) {
 let ok = 0, falhas = [];
 await pool(latest.parlamentares, 4, async (p) => {
   const destino = path.join(PASTA, `${p.id}.jpg`);
+  if (fs.existsSync(destino) && fs.statSync(destino).size > 250_000) {
+    // foto antiga, salva no tamanho original: reduz e segue
+    fs.writeFileSync(destino, await reduzir(fs.readFileSync(destino)));
+  }
   if (fs.existsSync(destino) && (Date.now() - fs.statSync(destino).mtimeMs) / 864e5 < 30) {
     p.foto = `data/fotos/${p.id}.jpg`;
     ok++;
@@ -40,7 +48,7 @@ await pool(latest.parlamentares, 4, async (p) => {
   for (const url of await candidatas(p)) {
     const buf = await get(url, { as: 'buffer', ttlHoras: 24 * 30, opcional: true, tentativas: 2 });
     if (ehImagem(buf)) {
-      fs.writeFileSync(destino, buf);
+      fs.writeFileSync(destino, await reduzir(buf));
       p.foto = `data/fotos/${p.id}.jpg`;
       ok++;
       return;
