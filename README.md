@@ -1,6 +1,6 @@
 # Placar do Mandato SP
 
-No ar em **https://placar-do-mandato-sp.vercel.app** (deploy automático a cada commit no `main`).
+No ar em **https://www.mandatoaberto.site** (Vercel, deploy automático a cada commit no `main`).
 
 Site estático que acompanha, com atualização semanal, os 70 deputados federais, os 3 senadores e os 94 deputados estaduais de São Paulo: presença, proposições (aprovadas, rejeitadas, arquivadas, em andamento), gastos de cota, tamanho do gabinete, custo estimado e um **score de valor ao cidadão** com metodologia aberta e pesos ajustáveis pelo visitante.
 
