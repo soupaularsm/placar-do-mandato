@@ -64,3 +64,24 @@ test('xml em blocos', () => {
   assert.equal(regs.length, 2);
   assert.equal(regs[0].NomeParlamentar, 'José & Cia');
 });
+
+import { forEachRecordInZip } from '../scripts/lib/xmlstream.js';
+import AdmZip from 'adm-zip';
+
+test('xml em zip, raiz com mesmo nome do registro', async () => {
+  const xml = '<?xml version="1.0" encoding="UTF-8"?><natureza><natureza><idNatureza>1</idNatureza><nmNatureza>Projeto de lei</nmNatureza></natureza><natureza><idNatureza>2</idNatureza><nmNatureza>Indicação</nmNatureza></natureza></natureza>';
+  const z = new AdmZip();
+  z.addFile('n.xml', Buffer.from(xml));
+  const regs = [];
+  await forEachRecordInZip(z.toBuffer(), 'natureza', (r) => regs.push(r));
+  assert.equal(regs.length, 2);
+  assert.equal(regs[1].nmNatureza, 'Indicação');
+});
+
+test('status do Senado', () => {
+  assert.equal(statusPorTexto('APROVADA'), 'aprovada');
+  assert.equal(statusPorTexto('PREJUDICADA'), 'rejeitada');
+  assert.equal(statusPorTexto('REMETIDA À CÂMARA DOS DEPUTADOS'), 'aprovada');
+  assert.equal(statusPorTexto('AUDIÊNCIA PÚBLICA REALIZADA'), 'andamento');
+  assert.equal(statusPorTexto('ARQUIVADA AO FINAL DA LEGISLATURA'), 'arquivada');
+});

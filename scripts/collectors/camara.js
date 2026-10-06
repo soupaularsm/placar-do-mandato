@@ -80,7 +80,8 @@ export async function coletarCamara(cfg, hoje = new Date()) {
     for (const e of await arquivoJson('eventos', ano)) {
       const tipo = e.descricaoTipo || e.tipo || '';
       const situacao = e.situacao || '';
-      const plen = !Array.isArray(e.orgaos) || e.orgaos.some((o) => /PLEN/i.test(o.sigla || o.siglaOrgao || ''));
+      const local = e.localCamara?.nome || '';
+      const plen = Array.isArray(e.orgaos) ? e.orgaos.some((o) => /PLEN/i.test(o.sigla || o.siglaOrgao || '')) : !local || /plen[aá]rio da c[aâ]mara/i.test(local);
       const t = new Date(e.dataHoraInicio);
       if (/sess[aã]o deliberativa/i.test(tipo) && /encerrad/i.test(situacao) && plen && t >= new Date(inicio) && t <= hoje)
         sessoes.set(Number(e.id ?? idDeUri(e.uri)), t);
@@ -98,29 +99,31 @@ export async function coletarCamara(cfg, hoje = new Date()) {
   // ---------- Proposições (como primeiro autor) ----------
   console.log('Câmara: proposições');
   const ids = new Set(deputados.map((d) => d.id));
-  const autoria = new Map(); // idProp -> idDeputado
-  const props = new Map();
+  const autoria = new Map(); // idProp -> idDeputado (primeiro autor)
   for (const ano of anos) {
     for (const a of await arquivoJson('proposicoesAutores', ano)) {
       const dep = Number(a.idDeputadoAutor ?? idDeUri(a.uriAutor));
-      const primeiro = Number(a.ordemAssinatura) === 1 || a.ordemAssinatura == null;
-      if (ids.has(dep) && primeiro) autoria.set(Number(a.idProposicao ?? idDeUri(a.uriProposicao)), dep);
+      if (ids.has(dep) && Number(a.ordemAssinatura) === 1) autoria.set(Number(a.idProposicao ?? idDeUri(a.uriProposicao)), dep);
     }
+  }
+  const props = new Map();
+  for (const ano of anos) {
     for (const p of await arquivoJson('proposicoes', ano)) {
       const id = Number(p.id);
-      if (!autoria.has(id)) continue;
+      if (!autoria.has(id) || props.has(id)) continue;
+      const data = (p.dataApresentacao || '').slice(0, 10);
+      if (data && data < inicio) continue; // proposições antigas que tramitaram no ano
       const situacao = p.ultimoStatus?.descricaoSituacao ?? p.ultimoStatus_descricaoSituacao ?? '';
-      const tram = p.ultimoStatus?.descricaoTramitacao ?? p.ultimoStatus_descricaoTramitacao ?? '';
       props.set(id, {
         sigla: p.siglaTipo, numero: p.numero, ano: p.ano, ementa: p.ementa,
         categoria: categoriaPorSigla(p.siglaTipo, p.ementa),
         status: statusPorTexto(situacao),
-        situacao_oficial: situacao || tram,
-        data: (p.dataApresentacao || '').slice(0, 10),
+        data,
         url: `https://www.camara.leg.br/propostas-legislativas/${id}`,
       });
     }
   }
+  console.log(`  ${props.size} proposições de primeira autoria`);
   const propsPorDep = new Map();
   for (const [idProp, dep] of autoria) {
     const p = props.get(idProp);
@@ -165,8 +168,9 @@ export async function coletarCamara(cfg, hoje = new Date()) {
     let assessores = null, verbaUsadaMedia = null;
     if (htmlPessoal) {
       const $ = cheerio.load(htmlPessoal);
+      // primeira tabela = "Em exercício"; a segunda é o histórico de contratação
       const tabela = $('table').first();
-      const n = tabela.find('tbody tr').filter((_, tr) => $(tr).find('td').length >= 3).length;
+      const n = tabela.find('tr').filter((_, tr) => $(tr).find('td').length >= 3).length;
       assessores = n || null;
     }
     if (htmlVerba) {

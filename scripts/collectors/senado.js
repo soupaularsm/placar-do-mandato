@@ -97,18 +97,14 @@ export async function coletarSenado(cfg, hoje = new Date()) {
       const sigla = p.sigla || m[1];
       const ementa = p.ementa || '';
       // conta só quando é o primeiro autor (o campo "autoria" lista os autores em ordem)
-      if (p.autoria && !norm(p.autoria).replace(/^senador[a]? /, '').startsWith(norm(s.nome).split(' ')[0])) continue;
+      if (p.autoria && !norm(p.autoria).replace(/^senador[a]? /, '').startsWith(norm(s.nome))) continue;
+      if (p.dataApresentacao && p.dataApresentacao.slice(0, 10) < inicio) continue;
       const categoria = categoriaPorSigla(sigla, ementa);
-      let situacao = p.situacao || p.descricaoSituacao || '';
-      if (!situacao && categoria === 'normativa' && p.id) {
-        const det = await getSenado(`${LEGIS}/processo/${p.id}`, {
-          ttlHoras: p.tramitando === 'N' ? Infinity : 150, opcional: true,
-        });
-        situacao = det?.situacaoAtual?.descricao || det?.situacao || det?.autuacoes?.[0]?.situacoes?.at?.(-1)?.descricao || '';
-      }
+      const situacao = p.situacaoAtual || p.situacao || '';
+      const tramitando = /^s/i.test(p.tramitando || '');
       lista.push({
         sigla, numero: p.numero || m[2], ano: p.ano || m[3], ementa, categoria,
-        status: situacao ? statusPorTexto(situacao) : p.tramitando === 'N' ? 'arquivada' : 'andamento',
+        status: situacao ? statusPorTexto(situacao) : tramitando ? 'andamento' : 'arquivada',
         data: (p.dataApresentacao || '').slice(0, 10),
         url: p.codigoMateria ? `https://www25.senado.leg.br/web/atividade/materias/-/materia/${p.codigoMateria}` : null,
       });
@@ -146,9 +142,9 @@ export async function coletarSenado(cfg, hoje = new Date()) {
     if (!html) return;
     const texto = cheerio.load(html)('body').text().replace(/\s+/g, ' ');
     const trecho = texto.split(/PESSOAL DO GABINETE/i)[1] || '';
-    const total = /total[^0-9]{0,40}(\d{1,3})/i.exec(trecho);
-    const comiss = /comissionad[oa]s?[^0-9]{0,40}(\d{1,3})/i.exec(trecho);
-    pessoal.set(s.cod, total ? Number(total[1]) : comiss ? Number(comiss[1]) : null);
+    const gab = /Gabinete\s+(\d+)\s+pessoa/i.exec(trecho);
+    const apoio = /Apoio\s+(\d+)\s+pessoa/i.exec(trecho);
+    pessoal.set(s.cod, gab ? Number(gab[1]) + (apoio ? Number(apoio[1]) : 0) : null);
   });
 
   return parlamentares.map((s) => {
