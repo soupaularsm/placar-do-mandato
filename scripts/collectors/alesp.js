@@ -157,14 +157,13 @@ export async function coletarAlesp(cfg, hoje = new Date()) {
       for (const x of Array.isArray(r) ? r : []) {
         const s = norm(x.situacao || '');
         situacoes.set(s, (situacoes.get(s) || 0) + 1);
-        if (!s) continue;
-        if (/justific|licen|afast|missao|represent|oficial|autorizad/.test(s)) just++;
-        else if (/ausen|falt|nao compareceu/.test(s)) aus++;
-        else if (/presen|compareceu/.test(s)) pres++;
-        else just++;
+        if (!s || /nao deliberativa|indefinida/.test(s)) continue; // sessão sem votação
+        if (/^presente/.test(s)) pres++;
+        else if (/licen|afast|missao|representacao|a servico|comissao parlamentar de inquerito|audiencia publica/.test(s)) continue; // fora da conta
+        else { aus++; if (/^justificada/.test(s)) just++; }
       }
     }
-    if (pres + aus) presenca.set(d.idDep, { sessoes: pres + aus, presentes: pres, taxa: pres / (pres + aus), justificadas: just, base: 'Sessões plenárias (ausências justificadas fora da conta)' });
+    if (pres + aus) presenca.set(d.idDep, { sessoes: pres + aus, presentes: pres, taxa: pres / (pres + aus), justificadas: just, base: 'Sessões plenárias deliberativas' });
   });
   console.log('  situações encontradas:', JSON.stringify(Object.fromEntries(situacoes)));
 

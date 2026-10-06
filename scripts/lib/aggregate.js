@@ -32,7 +32,7 @@ export function resumirProposicoes(lista, manterLista = false) {
     else if (p.categoria === 'indicacao') r.indicacoes++;
     else r.outras++;
 
-    if (manterLista && p.categoria !== 'outra') {
+    if (manterLista && (p.categoria === 'normativa' || p.categoria === 'fiscalizacao')) {
       detalhada.push({
         sigla: p.sigla, numero: p.numero, ano: p.ano,
         ementa: (p.ementa || '').slice(0, 400),
@@ -45,7 +45,8 @@ export function resumirProposicoes(lista, manterLista = false) {
   }
   if (manterLista) {
     detalhada.sort((a, b) => String(b.data || b.ano).localeCompare(String(a.data || a.ano)));
-    r.lista = detalhada;
+    r.lista = detalhada.slice(0, 400);
+    r.lista_truncada = detalhada.length > 400;
   }
   return r;
 }

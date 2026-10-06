@@ -85,3 +85,8 @@ test('status do Senado', () => {
   assert.equal(statusPorTexto('AUDIÊNCIA PÚBLICA REALIZADA'), 'andamento');
   assert.equal(statusPorTexto('ARQUIVADA AO FINAL DA LEGISLATURA'), 'arquivada');
 });
+
+test('declaratórias de município contam como honoríficas', () => {
+  assert.ok(ehHonorifica('Classifica como de Interesse Turístico o Município de Lucélia.'));
+  assert.ok(!ehHonorifica('Institui o Programa Estadual de Incentivo ao Transporte Público'));
+});

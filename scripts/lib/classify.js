@@ -61,6 +61,8 @@ const HONORIFICA = [
   /livro dos herois|panteao da patria|inscreve o nome/,
   /capital (estadual|nacional) d[oa]/,
   /declara patrimonio (cultural|historico|imaterial)|patrimonio cultural imaterial/,
+  // declaratórias de município (em geral apresentadas em série)
+  /classifica como (de )?(municipio de )?interesse turistico|classifica como estancia|eleva a categoria de estancia/,
   /^(altera a lei .*?para )?dar? (o )?nome/,
 ];
 

@@ -22,7 +22,10 @@ async function getSenado(url, opts = {}) {
 }
 
 const PRESENTE = new Set(['sim', 'nao', 'abstencao', 'p-nrv', 'obstrucao', 'presidente (art. 51 risf)', 'presidente', 'votou']);
-const AUSENTE_SEM_JUSTIFICATIVA = new Set(['ncom', 'aus', 'ausente']);
+const SEM_JUSTIFICATIVA = new Set(['ncom', 'aus', 'ausente']);
+// Fora da conta: licenças formais e missão/representação oficial
+const fora = (sigla, desc) => /^(ls|lp|lg|la|lap|lc|lsa|mis|rep)$/.test(sigla) || /licen|miss[aã]o|representa/.test(desc);
+const codigos = new Map();
 
 function meses(inicio, hoje) {
   const out = [];
@@ -71,15 +74,19 @@ export async function coletarSenado(cfg, hoje = new Date()) {
         const cod = String(vt.codigoParlamentar ?? vt.CodigoParlamentar);
         if (!cods.has(cod)) continue;
         const sigla = norm(vt.siglaVotoParlamentar ?? vt.SiglaVoto ?? '');
+        const desc = norm(vt.descricaoVotoParlamentar ?? '');
+        codigos.set(`${sigla} (${desc})`, (codigos.get(`${sigla} (${desc})`) || 0) + 1);
         const reg = votos.get(cod) || { presente: 0, ausente: 0, justificada: 0, primeira: data };
         if (PRESENTE.has(sigla)) reg.presente++;
-        else if (AUSENTE_SEM_JUSTIFICATIVA.has(sigla)) reg.ausente++;
-        else reg.justificada++;
+        else if (fora(sigla, desc)) { /* licença ou missão: não conta */ }
+        else { reg.ausente++; if (!SEM_JUSTIFICATIVA.has(sigla)) reg.justificada++; }
         if (data < reg.primeira) reg.primeira = data;
         votos.set(cod, reg);
       }
     }
   }
+
+  console.log('  códigos de voto:', JSON.stringify(Object.fromEntries(codigos)));
 
   // ---------- Autorias ----------
   console.log('Senado: proposições de autoria');
@@ -166,7 +173,7 @@ export async function coletarSenado(cfg, hoje = new Date()) {
       url_oficial: s.url,
       dias_em_exercicio: diasEx,
       presenca: base
-        ? { sessoes: base, presentes: v.presente, taxa: v.presente / base, justificadas: v.justificada, base: 'Votações nominais (ausências justificadas fora da conta)' }
+        ? { sessoes: base, presentes: v.presente, taxa: v.presente / base, justificadas: v.justificada, base: 'Participação em votações nominais' }
         : null,
       proposicoes: resumirProposicoes(propsPor.get(s.cod) || [], ehSP),
       custos: {
