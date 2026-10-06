@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Placar do Mandato SP</title>
+<meta name="description" content="Acompanhamento semanal de deputados federais, senadores e deputados estaduais de São Paulo: presença, propostas, gastos e um score de valor ao cidadão com metodologia aberta.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600..800&family=IBM+Plex+Mono:wght@400;600&family=Public+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="aviso-amostra" class="aviso" hidden><div class="wrap">Dados fictícios de demonstração. Nomes, partidos e números foram gerados para testar o site e não representam nenhum parlamentar real.</div></div>
+
+<header class="topo">
+  <div class="wrap">
+    <div class="marca">
+      <h1>Placar do <span>Mandato</span> SP</h1>
+      <p>Presença, propostas e gastos de quem representa São Paulo na Câmara, no Senado e na Assembleia Legislativa. Atualizado toda semana com dados oficiais.</p>
+    </div>
+    <div class="atualizacao">Dados de<strong id="data-ref">–</strong><a href="#metodologia">Como o score é calculado</a></div>
+  </div>
+  <div class="wrap"><nav class="abas" role="tablist" aria-label="Casa legislativa" id="abas"></nav></div>
+</header>
+
+<main id="lista-view">
+  <div class="wrap">
+    <div class="filtros">
+      <div class="campo busca"><label for="busca">Buscar</label><input id="busca" type="search" placeholder="Nome do parlamentar" autocomplete="off"></div>
+      <div class="campo"><label for="partido">Partido</label><select id="partido"><option value="">Todos</option></select></div>
+      <div class="campo"><label for="ordem">Ordenar por</label>
+        <select id="ordem">
+          <option value="score">Score</option>
+          <option value="assiduidade">Assiduidade</option>
+          <option value="aprovadas">Propostas aprovadas</option>
+          <option value="cota">Menor gasto na cota</option>
+          <option value="nome">Nome</option>
+        </select>
+      </div>
+      <button class="btn" id="btn-pesos" aria-pressed="false" aria-controls="pesos">Ajustar pesos</button>
+    </div>
+
+    <section class="pesos" id="pesos" hidden aria-label="Pesos do score">
+      <header>
+        <h2>Monte seu score</h2>
+        <button class="btn" id="restaurar">Voltar aos pesos oficiais</button>
+      </header>
+      <div class="pesos-grade" id="pesos-grade"></div>
+    </section>
+
+    <p class="nota-casa" id="nota-casa"></p>
+    <div class="cabecalho-ranking" aria-hidden="true">
+      <span>#</span><span></span><span>Parlamentar</span><span>Score</span><span>Critérios</span><span>Presença</span><span>Aprovadas</span>
+    </div>
+    <ol class="ranking" id="ranking"></ol>
+  </div>
+</main>
+
+<main id="perfil-view" hidden><div class="wrap perfil" id="perfil"></div></main>
+
+<section class="metodo" id="metodologia">
+  <div class="wrap">
+    <h2>Como o score é calculado</h2>
+    <p>Cada critério vira um percentil de 0 a 100 dentro da mesma casa. Um percentil 75 em assiduidade quer dizer que a pessoa esteve mais presente que 75% dos colegas. Deputados federais e senadores de SP são comparados com todos os parlamentares do país na mesma casa; deputados estaduais, com os 94 da ALESP. O score é a média ponderada desses percentis.</p>
+    <p>Se um critério não tem dado para uma casa, ele sai da conta e os outros pesos são redistribuídos. Quem tem menos de 120 dias em exercício ou menos de 60% dos critérios disponíveis aparece sem score.</p>
+    <dl id="lista-criterios"></dl>
+    <h3>Limites que você precisa conhecer</h3>
+    <ul class="limites">
+      <li>Quantidade não é qualidade. O score mede atividade e custo observáveis; não avalia o mérito ou a orientação política de nenhuma proposta.</li>
+      <li>Só contam proposições em que a pessoa é a primeira autora. Coautorias, relatorias e trabalho em comissões ainda não entram.</li>
+      <li>Honoríficas (nome de via, data comemorativa, título de cidadão, utilidade pública) são identificadas pelo texto da ementa e ficam fora da produção legislativa.</li>
+      <li>Na Câmara, a presença conta sessões deliberativas do Plenário; ausências justificadas aparecem como ausência porque o dado aberto não traz a justificativa. No Senado, usamos a participação em votações nominais e tiramos da conta as ausências justificadas.</li>
+      <li>Na ALESP, o histórico de quem assumiu como suplente ainda não é tratado: todos são medidos desde o início da legislatura.</li>
+      <li>Custo estimado = subsídio + média mensal da cota + verba de gabinete (Câmara). Auxílios, imóvel funcional e salários de assessores no Senado e na ALESP não entram.</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="rodape"><div class="wrap">Fontes: Dados Abertos da Câmara dos Deputados, Dados Abertos do Senado Federal e Portal de Dados Abertos da ALESP. Código e metodologia abertos para auditoria. Metodologia <span id="versao" class="num"></span>.</div></footer>
+
+<script src="app.js"></script>
+</body>
+</html>

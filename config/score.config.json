@@ -1,0 +1,75 @@
+{
+  "_comentario": "Pesos e parâmetros do score. Os pesos não precisam somar 100: o score normaliza pelos componentes disponíveis. Para criar um critério novo, adicione-o aqui e implemente o cálculo em scripts/lib/score.js (função extratores).",
+  "versao_metodologia": "0.1",
+  "componentes": {
+    "assiduidade": {
+      "peso": 25,
+      "rotulo": "Assiduidade",
+      "descricao": "Presença em sessões deliberativas do plenário (Câmara e ALESP) ou participação em votações nominais (Senado), contando só o período em que a pessoa estava em exercício.",
+      "direcao": "maior_melhor"
+    },
+    "producao": {
+      "peso": 15,
+      "rotulo": "Produção legislativa",
+      "descricao": "Proposições normativas de autoria (PL, PLP, PEC, PDL etc.), excluindo honoríficas como nomes de vias, datas comemorativas e títulos de cidadania. Escala logarítmica: a 50ª proposta vale menos que a 5ª.",
+      "direcao": "maior_melhor"
+    },
+    "efetividade": {
+      "peso": 20,
+      "rotulo": "Efetividade",
+      "descricao": "Taxa de proposições substantivas aprovadas pela casa ou transformadas em norma, suavizada para quem tem poucas propostas (5 propostas 'fantasma' na média da casa).",
+      "direcao": "maior_melhor"
+    },
+    "fiscalizacao": {
+      "peso": 15,
+      "rotulo": "Fiscalização",
+      "descricao": "Requerimentos de informação e propostas de fiscalização e controle, a ferramenta do parlamentar para cobrar o Executivo.",
+      "direcao": "maior_melhor"
+    },
+    "custo_cota": {
+      "peso": 15,
+      "rotulo": "Economia na cota",
+      "descricao": "Gasto médio mensal com a cota parlamentar (CEAP, CEAPS ou despesas de gabinete da ALESP). Quem gasta menos que os pares pontua mais.",
+      "direcao": "menor_melhor"
+    },
+    "custo_pessoal": {
+      "peso": 10,
+      "rotulo": "Enxugamento do gabinete",
+      "descricao": "Número de assessores lotados no gabinete. Quem mantém gabinete menor pontua mais. Comparado só entre parlamentares de SP da mesma casa.",
+      "direcao": "menor_melhor"
+    }
+  },
+  "parametros": {
+    "suavizacao_efetividade_k": 5,
+    "dias_minimos_em_exercicio": 120,
+    "cobertura_minima_para_ranking": 0.6
+  },
+  "casas": {
+    "camara": {
+      "nome": "Câmara dos Deputados",
+      "inicio_legislatura": "2023-02-01",
+      "id_legislatura": 57,
+      "benchmark": "nacional",
+      "salario_mensal": 46366.19,
+      "verba_gabinete_mensal": 165806.07,
+      "max_assessores": 25
+    },
+    "senado": {
+      "nome": "Senado Federal",
+      "inicio_legislatura": "2023-02-01",
+      "benchmark": "nacional",
+      "salario_mensal": 46366.19
+    },
+    "alesp": {
+      "nome": "Assembleia Legislativa de SP",
+      "inicio_legislatura": "2023-03-15",
+      "benchmark": "estadual",
+      "salario_mensal": 34774.64,
+      "presenca_url_template": ""
+    }
+  },
+  "_fontes_valores": {
+    "verba_gabinete_mensal": "camara.leg.br/deputados/{id}/verba-gabinete (2026)",
+    "salario_mensal": "Conferir a cada reajuste. ALESP = 75% do subsídio federal (CF art. 27 §2º)."
+  }
+}

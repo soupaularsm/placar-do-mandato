@@ -1,0 +1,57 @@
+name: Atualizar dados (semanal)
+
+on:
+  schedule:
+    # Segunda-feira, 06:17 em São Paulo (09:17 UTC)
+    - cron: '17 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      casas:
+        description: 'Casas a coletar (camara,senado,alesp)'
+        default: 'camara,senado,alesp'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar-dados
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      # Guarda respostas que não mudam (votações antigas, processos encerrados)
+      # para as próximas execuções serem rápidas.
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: coleta-${{ github.run_id }}
+          restore-keys: coleta-
+
+      - name: Coletar e calcular score
+        run: node --max-old-space-size=6144 scripts/build-data.js --casas=${{ github.event.inputs.casas || 'camara,senado,alesp' }}
+
+      - name: Publicar dados no repositório
+        run: |
+          git config user.name "placar-bot"
+          git config user.email "placar-bot@users.noreply.github.com"
+          git add public/data
+          if git diff --cached --quiet; then
+            echo "Sem mudanças nos dados."
+          else
+            git commit -m "dados: atualização de $(date -u +%Y-%m-%d)"
+            git push
+          fi

@@ -1,0 +1,20 @@
+name: Diagnóstico das fontes
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  amostras:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/diagnostico.sh diagnostico
+      - uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico
+          path: diagnostico
+          retention-days: 7

@@ -1,0 +1,25 @@
+{
+  "name": "placar-do-mandato",
+  "version": "1.0.0",
+  "description": "Placar do Mandato SP: acompanhamento semanal de deputados e senadores de SP",
+  "main": "index.js",
+  "scripts": {
+    "update": "node scripts/build-data.js",
+    "amostra": "node scripts/build-data.js --amostra",
+    "dev": "npx --yes serve public -l 3000",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "adm-zip": "^0.6.1",
+    "cheerio": "^1.2.0",
+    "csv-parse": "^7.0.3",
+    "fast-xml-parser": "^5.11.2"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}
