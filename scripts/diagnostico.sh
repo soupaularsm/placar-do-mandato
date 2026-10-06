@@ -60,3 +60,9 @@ done < "$OUT/alesp_presenca_scripts.txt"
 grep -hoE '["'"'"'][^"'"'"']*(presenca|Presenca|api/)[^"'"'"']*["'"'"']' "$OUT"/alesp_presenca* 2>/dev/null | sort -u | head -60 > "$OUT/alesp_presenca_endpoints.txt"
 
 cat "$OUT/_status.txt"
+
+# ---------------- Fotos ALESP ----------------
+c alesp_fotos.html "https://www.al.sp.gov.br/deputado/fotos/" "text/html"
+c alesp_dep.html "https://www.al.sp.gov.br/deputado/?matricula=300607" "text/html"
+grep -hoiE '(src|data-src|data-original|url\()[^>]{0,200}(jpg|jpeg|png|webp)[^>]{0,40}' "$OUT/alesp_fotos.html" "$OUT/alesp_dep.html" | sort -u | head -40 > "$OUT/alesp_fotos_urls.txt"
+grep -hoiE '[a-zA-Z0-9_./:-]*(foto|Foto|imagem|repositorio)[a-zA-Z0-9_./:?=&{}+-]*' "$OUT/alesp_fotos.html" "$OUT/alesp_dep.html" | sort | uniq -c | sort -rn | head -40 >> "$OUT/alesp_fotos_urls.txt"
