@@ -16,13 +16,13 @@ const ehImagem = (b) => b && b.length > 1500 && ((b[0] === 0xff && b[1] === 0xd8
 async function candidatas(p) {
   const det = JSON.parse(fs.readFileSync(path.join(DATA, 'p', `${p.id}.json`), 'utf8'));
   const urls = [];
-  if (p.casa === 'alesp' && det.url_oficial) {
-    // a página do deputado traz a foto oficial
-    const html = await get(det.url_oficial, { as: 'text', ttlHoras: 24 * 30, opcional: true });
-    for (const m of (html || '').matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) {
-      if (/foto|deputad/i.test(m[1]) && !/logo|icone|icon|brasao|banner/i.test(m[1])) {
-        urls.push(new URL(m[1], 'https://www.al.sp.gov.br/').href);
-      }
+  if (p.casa === 'alesp') {
+    // a página pública da ALESP busca a foto nesta API, pela matrícula
+    const mat = /matricula=(\d+)/.exec(det.url_oficial || '')?.[1];
+    if (mat) {
+      const r = await get(`https://legis-api-portal-prd.al.sp.gov.br/parlamentar-portal/detalhes/${mat}`, { ttlHoras: 24 * 30, opcional: true });
+      const tx = r?.biografia?.txFotoGrande;
+      if (tx) urls.push('https://www3.al.sp.gov.br/legis/' + tx.replace(/^\//, ''));
     }
   }
   if (det.foto) urls.push(det.foto.replace(/^http:/, 'https:'));
