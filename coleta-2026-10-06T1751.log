@@ -1,0 +1,37 @@
+
+=== Câmara dos Deputados ===
+Câmara: lista de deputados em exercício
+  513 deputados
+Câmara: histórico de exercício
+Câmara: sessões e presenças
+  409 sessões deliberativas
+Câmara: proposições
+  224277 proposições de primeira autoria
+Câmara: cota parlamentar (CEAP)
+Câmara: pessoal e verba de gabinete (SP)
+  ok: 70 de SP, 513 no comparativo
+
+=== Senado Federal ===
+Senado: senadores em exercício
+  81 senadores
+Senado: votações nominais
+Senado: proposições de autoria
+Senado: cota parlamentar (CEAPS)
+Senado: pessoal de gabinete (SP)
+  ok: 3 de SP, 81 no comparativo
+
+=== Assembleia Legislativa de SP ===
+ALESP: deputados
+  94 deputados estaduais em exercício
+ALESP: proposituras
+  69308 proposituras relevantes na legislatura
+  67405 com autor em exercício (1903 de outros autores)
+ALESP: andamentos (histórico completo, em fluxo)
+  7514001 andamentos lidos
+ALESP: despesas de gabinete
+ALESP: lotações
+ALESP: presença em plenário
+  situações encontradas: {"sessao nao deliberativa - com quorum regimental para abertura da sessao":31240,"justificada":5223,"ausencia em sessao extraordinaria":2075,"presente":37464,"licenca de interesse particular, sem remuneracao":704,"licenca-saude":1769,"em comissao de representacao":1534,"nao justificada":340,"a servico do poder legislativo":155,"em comissao parlamentar de inquerito":8,"licenca paternidade":16,"em audiencia publica":33,"licenciada":1,"licenca maternidade":171,"licenca para missao cultural/diplomatica":28,"indefinida":1,"afastamento temporario de exercente de mandato eletivo para cargo em comissao":905}
+  ok: 94 de SP, 94 no comparativo
+
+Pronto: 167 parlamentares de SP (1 sem score). Saída em public/data/
