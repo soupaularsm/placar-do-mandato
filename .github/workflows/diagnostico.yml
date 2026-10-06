@@ -1,10 +1,15 @@
 name: Diagnóstico das fontes
 
+# Roda quando o script de diagnóstico muda (ou manualmente) e grava as
+# amostras brutas no branch "diagnostico", para conferência dos formatos.
 on:
+  push:
+    branches: [main]
+    paths: [scripts/diagnostico.sh, .github/workflows/diagnostico.yml]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   amostras:
@@ -12,9 +17,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - run: bash scripts/diagnostico.sh diagnostico
-      - uses: actions/upload-artifact@v4
-        with:
-          name: diagnostico
-          path: diagnostico
-          retention-days: 7
+      - run: bash scripts/diagnostico.sh /tmp/diagnostico
+      - name: Gravar no branch diagnostico
+        run: |
+          cd /tmp/diagnostico
+          git init -q -b diagnostico
+          git config user.name "placar-bot"
+          git config user.email "placar-bot@users.noreply.github.com"
+          git add -A
+          git commit -qm "diagnóstico $(date -u +%Y-%m-%dT%H:%M)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diagnostico
