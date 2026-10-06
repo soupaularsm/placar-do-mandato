@@ -8,6 +8,7 @@ import path from 'node:path';
 import { calcularScores, ranquear, pesosDosTemas } from './lib/score.js';
 import { ROTULO_TEMA, TIPOS } from './lib/temas.js';
 import { siglasSemTipo } from './lib/aggregate.js';
+import { REGRAS, regrasAtivas, configurarImpacto } from './lib/impacto.js';
 import { gerarAmostra } from './sample-data.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -61,10 +62,12 @@ function somarBancada(sp) {
     for (const m of sp) for (const [k, v] of Object.entries(m.proposicoes?.[campo] || {})) out[k] = (out[k] || 0) + v;
     return out;
   };
-  return { parlamentares: sp.length, por_tema: soma('por_tema'), por_tipo: soma('por_tipo'), por_tema_aprovadas: soma('por_tema_aprovadas') };
+  return { parlamentares: sp.length, por_tema: soma('por_tema'), por_tipo: soma('por_tipo'), por_tema_aprovadas: soma('por_tema_aprovadas'), por_impacto: soma('por_impacto') };
 }
 
 async function main() {
+  configurarImpacto(config.impacto);
+  const ativas = regrasAtivas(config.impacto);
   const anterior = lerJson(path.join(OUT, 'latest.json'), null);
   const resultado = {
     gerado_em: new Date().toISOString(),
@@ -74,6 +77,10 @@ async function main() {
     componentes: config.componentes,
     temas: Object.fromEntries(Object.entries(ROTULO_TEMA).map(([id, rotulo]) => [id, { rotulo, peso: pesosDosTemas(config.temas)[id] ?? 0 }])),
     tipos: TIPOS,
+    impacto: Object.fromEntries(REGRAS.map((r) => [r.id, {
+      rotulo: r.rotulo, descricao: r.descricao, sinal: r.sinal, contestada: !!r.contestada, ativa: ativas.includes(r),
+    }])),
+    impacto_pesos: { amplia: config.impacto?.peso_amplia ?? 1, restringe: config.impacto?.peso_restringe ?? -2 },
     casas: {},
     parlamentares: [],
   };

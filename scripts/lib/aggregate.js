@@ -1,5 +1,6 @@
 // Agrega a lista de proposições de um parlamentar no formato comum.
 import { temaDe, tipoDe } from './temas.js';
+import { impactoDe, SINAL_IMPACTO } from './impacto.js';
 
 /**
  * @param {Array<{sigla,natureza,numero,ano,ementa,palavras_chave,categoria,status,data,url}>} lista
@@ -22,6 +23,8 @@ export function resumirProposicoes(lista, manterLista = false) {
     por_tema: {},
     por_tema_aprovadas: {},
     por_tipo_tema_status: {}, // {tipo: {tema: {status: n}}} — só normativas
+    impacto: { amplia: 0, restringe: 0 }, // direção das normativas (ver impacto.js)
+    por_impacto: {},
   };
   const recentes = {}; // {tipo: [itens]}
   const detalhada = [];
@@ -30,9 +33,14 @@ export function resumirProposicoes(lista, manterLista = false) {
     r.por_tipo[tipo] = (r.por_tipo[tipo] || 0) + 1;
     if (tipo === 'outro') siglasSemTipo.set(`${p.sigla} (${p.natureza || ''})`, (siglasSemTipo.get(`${p.sigla} (${p.natureza || ''})`) || 0) + 1);
 
-    let tema = null;
+    let tema = null, impacto = null;
     if (p.categoria === 'normativa') {
       tema = temaDe(p.ementa, p.palavras_chave);
+      impacto = impactoDe(p.ementa, tema);
+      if (impacto) {
+        r.por_impacto[impacto] = (r.por_impacto[impacto] || 0) + 1;
+        r.impacto[SINAL_IMPACTO[impacto] > 0 ? 'amplia' : 'restringe']++;
+      }
       r.normativas++;
       r.por_status[p.status] = (r.por_status[p.status] || 0) + 1;
       r.por_tema[tema] = (r.por_tema[tema] || 0) + 1;
@@ -51,7 +59,7 @@ export function resumirProposicoes(lista, manterLista = false) {
     if (manterLista) {
       (recentes[tipo] ??= []).push({
         sigla: p.sigla, numero: p.numero, ano: p.ano, ementa: (p.ementa || '').slice(0, 280),
-        tema, status: p.categoria === 'normativa' ? p.status : null, data: p.data || null, url: p.url || null,
+        tema, impacto, status: p.categoria === 'normativa' ? p.status : null, data: p.data || null, url: p.url || null,
       });
     }
 
@@ -62,6 +70,7 @@ export function resumirProposicoes(lista, manterLista = false) {
         categoria: tema === 'simbolica' ? 'honorifica' : p.categoria,
         tipo,
         tema,
+        impacto,
         status: p.categoria === 'normativa' ? p.status : null,
         data: p.data || null,
         url: p.url || null,

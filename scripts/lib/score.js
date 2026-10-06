@@ -17,7 +17,7 @@ export function pesosDosTemas(temas = {}) {
   return out;
 }
 
-export function extratores(params, temas = {}) {
+export function extratores(params, temas = {}, impacto = {}) {
   const k = params.suavizacao_efetividade_k ?? 5;
   const pesoTema = pesosDosTemas(temas);
   return {
@@ -27,6 +27,15 @@ export function extratores(params, temas = {}) {
       let soma = 0;
       for (const [t, n] of Object.entries(pt)) soma += n * (pesoTema[t] ?? 0);
       return Math.sign(soma) * Math.log1p(Math.abs(soma));
+    },
+    // direção das propostas: as que ampliam direitos somam, as que restringem tiram (peso maior).
+    // Mede a PROPORÇÃO sobre os projetos substantivos, não o volume: quem apresenta
+    // muito não ganha só por isso. Suavizado com k projetos neutros.
+    direitos: (m) => {
+      const im = m.proposicoes?.impacto;
+      if (!im) return null;
+      const s = im.amplia * (impacto.peso_amplia ?? 1) + im.restringe * (impacto.peso_restringe ?? -2);
+      return s / ((m.proposicoes.substantivas || 0) + (impacto.suavizacao_k ?? 5));
     },
     assiduidade: (m) => m.presenca?.taxa ?? null,
     producao: (m) => (m.proposicoes ? Math.log1p(m.proposicoes.substantivas) : null),
@@ -64,8 +73,8 @@ function percentis(valores, menorMelhor) {
  * @returns membros com campo `score`
  */
 export function calcularScores(membros, config) {
-  const { componentes, parametros, temas } = config;
-  const ext = extratores(parametros, temas);
+  const { componentes, parametros, temas, impacto } = config;
+  const ext = extratores(parametros, temas, impacto);
 
   // contexto da casa
   let somaAprov = 0, somaSubs = 0;

@@ -79,6 +79,10 @@
   const ROT_GRUPO = { prio: 'prioritário', rel: 'relevante', comp: 'complementar', neg: 'tira pontos' };
   const fracSimb = (pr) => (pr?.normativas ? (pr.por_tema?.simbolica || 0) / pr.normativas : 0);
   const rotTipo = (t) => dados.tipos?.[t] || t;
+  const rotImpacto = (i) => dados.impacto?.[i]?.rotulo || i;
+  const sinalImpacto = (i) => dados.impacto?.[i]?.sinal || 0;
+  const impactoDe = (pr) => pr?.impacto || { amplia: 0, restringe: 0 };
+  const temImpacto = () => !!dados.impacto && dados.parlamentares.some((p) => p.proposicoes?.impacto);
   const daCasa = (c) => dados.parlamentares.filter((p) => p.casa === c);
   const rotCasa = (c) => CASAS.find(([x]) => x === c)?.[1] || c;
 
@@ -146,6 +150,11 @@
       case 'agenda':
         if (!bom && fracSimb(pr) >= 0.2) return `${pct(fracSimb(pr))} dos projetos são simbólicos`;
         return `${fmt(prio)} projetos em temas prioritários`;
+      case 'direitos': {
+        const im = impactoDe(pr);
+        if (!bom && im.restringe) return `${fmt(im.restringe)} proposta${im.restringe > 1 ? 's' : ''} que restringe${im.restringe > 1 ? 'm' : ''} direitos`;
+        return im.amplia ? `${fmt(im.amplia)} propostas que ampliam direitos` : bom ? null : 'Nenhuma proposta que amplia direitos';
+      }
       case 'producao': return `${fmt(pr.substantivas)} projetos substantivos`;
       case 'efetividade': return pr.substantivas_aprovadas ? `${fmt(pr.substantivas_aprovadas)} de ${fmt(pr.substantivas)} projetos aprovados` : 'Nenhum projeto substantivo aprovado';
       case 'fiscalizacao': return `${fmt(pr.fiscalizacao)} pedidos de informação`;
@@ -267,7 +276,7 @@
         <div class="campo"><label class="visualmente-oculto" for="partido">Partido</label><select id="partido"><option value="">Todos os partidos</option>${ps.map((p) => `<option${p === estado.partido ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select></div>
         <div class="campo"><label class="visualmente-oculto" for="tema">Tema</label><select id="tema"><option value="">Todos os temas</option>${temas.map((t) => `<option value="${t}"${t === estado.tema ? ' selected' : ''}>${esc(rotTema(t))}</option>`).join('')}</select></div>
         <div class="campo"><label class="visualmente-oculto" for="ordem">Ordenar</label><select id="ordem">
-          ${[['score', 'Maior score'], ['assiduidade', 'Maior presença'], ['aprovadas', 'Mais projetos aprovados'], ['cota', 'Menor gasto na cota'], ['cota_desc', 'Maior gasto na cota'], ['custo_desc', 'Maior custo estimado'], ['simbolicas', 'Menos projetos simbólicos'], ['tema', 'Mais projetos no tema'], ['nome', 'Nome']]
+          ${[['score', 'Maior score'], ['assiduidade', 'Maior presença'], ['aprovadas', 'Mais projetos aprovados'], ['cota', 'Menor gasto na cota'], ['cota_desc', 'Maior gasto na cota'], ['custo_desc', 'Maior custo estimado'], ['simbolicas', 'Menos projetos simbólicos'], ['amplia', 'Mais propostas que ampliam direitos'], ['restringe', 'Mais propostas que restringem direitos'], ['tema', 'Mais projetos no tema'], ['nome', 'Nome']]
             .map(([v, r]) => `<option value="${v}"${v === estado.ordem ? ' selected' : ''}>${r}</option>`).join('')}
         </select></div>
         <button class="btn" id="btn-pesos" aria-pressed="${estado.pesosAbertos}" aria-controls="pesos">Ajustar pesos</button>
@@ -311,6 +320,8 @@
       cota_desc: (a, b) => (b.custos.cota_mensal_media ?? -Infinity) - (a.custos.cota_mensal_media ?? -Infinity),
       custo_desc: (a, b) => (b.custos.custo_estimado_mensal ?? -Infinity) - (a.custos.custo_estimado_mensal ?? -Infinity),
       simbolicas: (a, b) => fracSimb(a.proposicoes) - fracSimb(b.proposicoes),
+      amplia: (a, b) => impactoDe(b.proposicoes).amplia - impactoDe(a.proposicoes).amplia,
+      restringe: (a, b) => impactoDe(b.proposicoes).restringe - impactoDe(a.proposicoes).restringe || ult(a.meu) - ult(b.meu),
       tema: (a, b) => (b.proposicoes?.por_tema?.[estado.tema] || 0) - (a.proposicoes?.por_tema?.[estado.tema] || 0),
       nome: (a, b) => a.nome.localeCompare(b.nome, 'pt-BR'),
     }[ordem]);
@@ -330,6 +341,7 @@
       if (estado.tema && estado.tema !== 'simbolica') top = [estado.tema, ...top.filter((t) => t !== estado.tema)].slice(0, 2);
       const tags = top.map((t) => `<em class="tag${t === estado.tema ? ' ativo' : ''}">${esc(rotTema(t))}${t === estado.tema ? ` ${fmt(pt[t])}` : ''}</em>`);
       if (fracSimb(pr) >= 0.25 || estado.tema === 'simbolica') tags.push(`<em class="tag tag-neg">${pct(fracSimb(pr))} simbólicos</em>`);
+      if (impactoDe(pr).restringe) tags.push(`<em class="tag tag-neg">↓ ${fmt(impactoDe(pr).restringe)} restringe${impactoDe(pr).restringe > 1 ? 'm' : ''} direitos</em>`);
       return `<li><button class="linha" data-id="${esc(p.id)}" aria-label="Abrir perfil de ${esc(p.nome)}">
         <span class="pos">${posicao.get(p.id) ?? '–'}</span>
         ${foto(p)}
@@ -440,11 +452,12 @@
     let selo = '';
     if (x.status) { const [r, c] = STATUS[x.status] || STATUS.andamento; selo = `<span class="selo" style="--c:${c}">${r}</span>`; }
     const tema = x.tema ? `<em class="tag${grupoTema(x.tema) === 'neg' ? ' tag-neg' : ''}">${esc(rotTema(x.tema))}</em>` : '';
+    const imp = x.impacto ? `<em class="tag-imp ${sinalImpacto(x.impacto) > 0 ? 'amplia' : 'restringe'}" title="Regra: ${esc(rotImpacto(x.impacto))}">${sinalImpacto(x.impacto) > 0 ? '↑' : '↓'} ${esc(rotImpacto(x.impacto))}</em>` : '';
     const data = x.data ? new Date(x.data + 'T12:00').toLocaleDateString('pt-BR') : '';
     return `<li class="prop">
       <span class="ident">${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${id}</a>` : `<b>${id}</b>`}
         ${autor ? `<a href="#p-${esc(autor.id)}" class="autor">${esc(autor.nome)}</a>` : ''}
-        ${data ? `<span>${data}</span>` : ''}${tema}</span>
+        ${data ? `<span>${data}</span>` : ''}${tema}${imp}</span>
       ${selo}
       <span class="em">${esc(x.ementa)}</span></li>`;
   }
@@ -460,6 +473,10 @@
         const pt = pr.por_tema || {};
         const g = (x) => Object.entries(pt).filter(([t]) => grupoTema(t) === x).reduce((a, [, n]) => a + n, 0);
         return `${g('prio')} em temas prioritários, ${g('rel')} em relevantes, ${g('comp')} complementares e ${pt.simbolica || 0} simbólicos, que tiram pontos.`;
+      }
+      case 'direitos': {
+        const im = impactoDe(pr);
+        return `${fmt(im.amplia)} propostas ampliam direitos ou qualidade de vida e ${fmt(im.restringe)} restringem direitos, em ${fmt(pr.substantivas)} projetos substantivos.`;
       }
       case 'producao': return `${fmt(pr.substantivas)} projetos substantivos como primeiro autor. Mediana da casa: ${ref.substantivas ?? '–'}.`;
       case 'efetividade': return `${fmt(pr.substantivas_aprovadas)} aprovados de ${fmt(pr.substantivas)}. Taxa mediana da casa: ${pct(ref.taxa_aprovacao, 1)}.`;
@@ -581,6 +598,12 @@
             <h3>Onde está o esforço</h3>
             <p class="muted">${pr.normativas ? `${pct(fracSimb(pr))} dos projetos são simbólicos. Na bancada de SP ${NA_CASA[p.casa]}, ${pct(simbBancada)}.` : 'Sem projetos de lei, PECs ou decretos no período.'}</p>
             ${nuvemTipos(pr.por_tipo, p.casa, { links: false })}
+            ${pr.impacto ? `<h4 class="sub-titulo">Direção das propostas</h4>
+            <div class="direcao">
+              <button type="button" class="direcao-item amplia" data-filtro-ir="amplia"><b>${fmt(pr.impacto.amplia)}</b><span>ampliam direitos ou qualidade de vida</span></button>
+              <button type="button" class="direcao-item restringe${pr.impacto.restringe ? '' : ' zero'}" data-filtro-ir="restringe"><b>${fmt(pr.impacto.restringe)}</b><span>restringem direitos</span></button>
+            </div>
+            <p class="muted direcao-nota">Toque para ver as propostas. <a href="#metodologia">Como classificamos</a></p>` : ''}
             <h4 class="sub-titulo">Temas dos projetos</h4>
             ${listaTemas(temasLinhas)}
           </section>
@@ -590,7 +613,7 @@
             <div class="empilhada" role="img" aria-label="Situação dos projetos">${Object.entries(STATUS).map(([k, [r, cc]]) => (pr.por_status?.[k] ? `<i style="width:${(pr.por_status[k] / totalSt) * 100}%;background:${cc}" title="${r}: ${pr.por_status[k]}"></i>` : '')).join('')}</div>
             <div class="legenda">${Object.entries(STATUS).map(([k, [r, cc]]) => `<span style="--c:${cc}">${r} ${fmt(pr.por_status?.[k] || 0)}</span>`).join('')}</div>
             <div class="chips filtros-props" id="props-filtros">
-              ${[['todas', 'Todas'], ['normativa', 'Substantivas'], ['aprovada', 'Aprovadas'], ['honorifica', 'Simbólicas'], ['fiscalizacao', 'Fiscalização']].map(([k, r]) => `<button data-filtro="${k}" aria-pressed="${k === 'todas'}">${r}</button>`).join('')}
+              ${[['todas', 'Todas'], ['normativa', 'Substantivas'], ['aprovada', 'Aprovadas'], ['honorifica', 'Simbólicas'], ...(pr.impacto ? [['amplia', 'Ampliam direitos'], ['restringe', 'Restringem direitos']] : []), ['fiscalizacao', 'Fiscalização']].map(([k, r]) => `<button data-filtro="${k}" aria-pressed="${k === 'todas'}">${r}</button>`).join('')}
               <span class="campo"><label class="visualmente-oculto" for="tema-props">Tema</label><select id="tema-props"><option value="">Todos os temas</option>${temasLinhas.map(([t, n]) => `<option value="${t}">${esc(rotTema(t))} (${n})</option>`).join('')}</select></span>
             </div>
             <ul class="props" id="props">${listaPropsPerfil()}</ul>
@@ -602,7 +625,8 @@
 
   function listaPropsPerfil() {
     const { filtro, tema, limite, lista } = estado.perfil;
-    const f = { todas: () => true, normativa: (x) => x.categoria === 'normativa', aprovada: (x) => x.status === 'aprovada', honorifica: (x) => x.categoria === 'honorifica', fiscalizacao: (x) => x.categoria === 'fiscalizacao' }[filtro];
+    const f = { todas: () => true, normativa: (x) => x.categoria === 'normativa', aprovada: (x) => x.status === 'aprovada', honorifica: (x) => x.categoria === 'honorifica', fiscalizacao: (x) => x.categoria === 'fiscalizacao',
+      amplia: (x) => x.impacto && sinalImpacto(x.impacto) > 0, restringe: (x) => x.impacto && sinalImpacto(x.impacto) < 0 }[filtro];
     const itens = (lista || []).filter((x) => f(x) && (!tema || x.tema === tema));
     if (!itens.length) return '<li class="vazio">Nenhuma proposta neste filtro.</li>';
     return itens.slice(0, limite).map((x) => itemProposta(x)).join('') +
@@ -647,6 +671,13 @@
         projPor: somaCampo(ms, (p) => p.proposicoes?.substantivas) / ms.length,
         aprovPor: somaCampo(ms, (p) => p.proposicoes?.substantivas_aprovadas) / ms.length,
         fiscPor: somaCampo(ms, (p) => p.proposicoes?.fiscalizacao) / ms.length,
+        amplia: somaCampo(ms, (p) => p.proposicoes?.impacto?.amplia),
+        restringe: somaCampo(ms, (p) => p.proposicoes?.impacto?.restringe),
+        ...(() => {
+          const subs = somaCampo(ms, (p) => p.proposicoes?.substantivas);
+          const a = somaCampo(ms, (p) => p.proposicoes?.impacto?.amplia), r = somaCampo(ms, (p) => p.proposicoes?.impacto?.restringe);
+          return { ampliaPct: subs ? a / subs : null, restringePor: r / ms.length, ampliaPor: a / ms.length };
+        })(),
       };
     });
   }
@@ -713,6 +744,12 @@
         <div class="cartao">${dispersaoScore(comScore)}</div>
       </div>
 
+      ${temImpacto() ? `<div class="wrap secao secao-div">
+        <div class="secao-cab"><div><h2>Quem amplia e quem restringe direitos</h2>
+          <p>Não basta propor muito: importa a direção. À direita, a fatia dos projetos que reduzem desigualdade, ampliam direitos ou criam política pública de qualidade de vida. À esquerda, as propostas que restringem direitos de minorias, retiram direitos conquistados ou enfraquecem a proteção ambiental. <a href="#metodologia">Veja as regras</a>.</p></div></div>
+        <div class="cartao">${direitosPartidos(V)}</div>
+      </div>` : ''}
+
       <div class="wrap secao secao-div">
         <div class="duas pt-duas">
           <section>
@@ -760,6 +797,7 @@
       [umaCasa() ? 'Cota por mês' : 'Cota vs mediana da casa', umaCasa() ? brlMil(x.cota) : pctS(x.cotaIdx), umaCasa() ? delta(x.cota, G.cota, false, (d) => (d >= 0 ? '+' : '−') + brlMil(Math.abs(d))) : delta(x.cotaIdx, G.cotaIdx, false, (d) => n1s(d * 100) + ' p.p.')],
       ['Pautas prioritárias', n1(x.prioPor), delta(x.prioPor, G.prioPor, true, n1s) || '', null, 'projetos por parlamentar'],
       ['Projetos simbólicos', pct(x.simb), delta(x.simb, G.simb, false, (d) => n1s(d * 100) + ' p.p.')],
+      ...(temImpacto() ? [['Ampliam direitos', pct(x.ampliaPct), '', null, 'dos projetos substantivos'], ['Restringem direitos', fmt(x.restringe), '', x.restringe ? 'var(--coral)' : null, 'propostas no mandato']] : []),
     ];
     const membros = [...x.membros].sort((a, b) => (scoreCom(b) ?? -1) - (scoreCom(a) ?? -1));
     return `<div class="cartao pt-ficha">
@@ -783,11 +821,13 @@
     const bons = [
       cartao(ext((x) => x.score), 'Maior score médio', n1(ext((x) => x.score)?.score), nP),
       cartao(ext((x) => x.cotaIdx, true), 'Gasta menos na cota', fmtCota(ext((x) => x.cotaIdx, true) || {}), nP),
+      temImpacto() ? cartao(ext((x) => x.ampliaPct), 'Mais propostas que ampliam direitos', `${pct(ext((x) => x.ampliaPct)?.ampliaPct)} dos projetos`, nP) : '',
       cartao(ext((x) => x.prioPor), 'Mais pautas prioritárias', `${n1(ext((x) => x.prioPor)?.prioPor)} por parlamentar`, nP),
     ];
     const ruins = [
       cartao(ext((x) => x.score, true), 'Menor score médio', n1(ext((x) => x.score, true)?.score), nP),
       cartao(ext((x) => x.cotaIdx), 'Gasta mais na cota', fmtCota(ext((x) => x.cotaIdx) || {}), nP),
+      temImpacto() ? cartao(ext((x) => (x.restringe ? x.restringePor : null)), 'Mais propostas que restringem direitos', (() => { const y = ext((x) => (x.restringe ? x.restringePor : null)); return y ? `${fmt(y.restringe)} proposta${y.restringe > 1 ? 's' : ''}` : ''; })(), nP) : '',
       cartao(ext((x) => x.simb), 'Mais projetos simbólicos', `${pct(ext((x) => x.simb)?.simb)} dos projetos`, nP),
     ];
     if (V.length < 2) return '<p class="vazio">Poucos partidos para comparar nesta casa.</p>';
@@ -873,6 +913,23 @@
     </div>`;
   }
 
+  function direitosPartidos(V) {
+    const L = V.filter((x) => x.normativas > 0).sort((a, b) => (b.ampliaPct ?? 0) - 2 * b.restringePor - ((a.ampliaPct ?? 0) - 2 * a.restringePor) || b.ampliaPct - a.ampliaPct);
+    if (!L.length) return '<p class="vazio">Sem projetos no período.</p>';
+    const maxA = Math.max(0.05, ...L.map((x) => x.ampliaPct || 0));
+    const maxR = Math.max(1, ...L.map((x) => x.restringe));
+    return `<div class="pt-barras">
+      <div class="pt-dir-cab" aria-hidden="true"><span></span><span class="ruim">restringem direitos</span><span></span><span class="bom">ampliam direitos</span><span></span></div>
+      ${L.map((x) => `<div class="pt-dir-linha" data-pt="${esc(x.sigla)}">
+        <button type="button" class="pt-sigla" data-partido-foco="${esc(x.sigla)}">${esc(x.sigla)}<small>${x.n}</small></button>
+        <span class="pt-dir-n ruim">${x.restringe ? fmt(x.restringe) : ''}</span>
+        <span class="pt-dir"><span class="esq">${x.restringe ? `<i style="width:${(x.restringe / maxR) * 100}%"></i>` : ''}</span><span class="dir"><i style="width:${((x.ampliaPct || 0) / maxA) * 100}%"></i></span></span>
+        <span class="pt-dir-n bom">${pct(x.ampliaPct)}</span>
+      </div>`).join('')}
+      <div class="legenda"><span style="--c:var(--coral)">Propostas que restringem (total)</span><span style="--c:var(--good)">Fatia dos projetos que ampliam</span></div>
+    </div>`;
+  }
+
   function gastosPartidos(V) {
     const L = V.filter((x) => x.cotaIdx != null).sort((a, b) => b.cotaIdx - a.cotaIdx);
     if (!L.length) return '<p class="vazio">Sem dados de cota.</p>';
@@ -919,6 +976,7 @@
       ['prioPor', 'Pautas prioritárias', (x) => x.prioPor, n1, 'maior'],
       ['aprovPor', 'Aprovados', (x) => x.aprovPor, n1, 'maior'],
       ['simb', 'Simbólicos', (x) => x.simb, (v) => pct(v), 'menor'],
+      ...(temImpacto() ? [['ampliaPct', 'Ampliam direitos', (x) => x.ampliaPct, (v) => pct(v), 'maior'], ['restringe', 'Restringem direitos', (x) => x.restringe, fmt, 'menor']] : []),
       ['fiscPor', 'Fiscalização', (x) => x.fiscPor, n1, 'maior'],
     ];
     const [k, dir] = estado.ptOrdem;
@@ -977,8 +1035,13 @@
         <h2>Peso dos temas</h2>
         <div class="texto"><p>Cada projeto de lei, PEC ou decreto recebe um tema principal, identificado por palavras-chave na ementa. A soma dos pesos forma o critério Relevância da agenda. As prioridades são uma escolha editorial do projeto, publicada aqui para que qualquer pessoa possa discordar e recalcular.</p></div>
         <dl class="criterios-lista">${['prio', 'rel', 'comp', 'neg'].filter((g) => grupos[g]).map((g) => `<div><dt>${ROT_GRUPO[g].replace(/^./, (x) => x.toUpperCase())} <span>${grupos[g].peso > 0 ? '+' : ''}${String(grupos[g].peso).replace('.', ',')}</span></dt><dd>${grupos[g].temas.map(esc).join(', ')}</dd></div>`).join('')}</dl>
+        ${dados.impacto ? `<h2>Direção das propostas</h2>
+        <div class="texto"><p>Além do tema, cada projeto de lei, PEC ou decreto é lido pela direção: amplia ou restringe direitos? A classificação é automática, por regras de palavras na ementa, e propositalmente estreita: na dúvida, a proposta fica neutra. Cada proposta classificada aparece no perfil do parlamentar com o nome da regra, para quem quiser conferir.</p>
+        <p>Propostas que ampliam somam ${dados.impacto_pesos?.amplia ?? 1} ponto; as que restringem tiram ${Math.abs(dados.impacto_pesos?.restringe ?? -2)}. O saldo é dividido pelo número de projetos, então conta a qualidade do que a pessoa propõe, não o volume.</p></div>
+        <dl class="criterios-lista">${Object.entries(dados.impacto).sort((a, b) => a[1].sinal - b[1].sinal).map(([, r]) => `<div class="${r.ativa ? '' : 'desligada'}"><dt>${esc(r.rotulo)} <span class="${r.sinal > 0 ? 'bom' : 'ruim'}">${r.sinal > 0 ? 'soma' : 'tira'}</span></dt><dd>${esc(r.descricao)}${r.contestada ? `<br><b>Regra contestada, ${r.ativa ? 'ligada' : 'desligada'} nesta versão.</b>` : ''}</dd></div>`).join('')}</dl>` : ''}
         <h2>Limites que você precisa conhecer</h2>
         <ul class="limites">
+          <li>A direção das propostas é uma escolha editorial declarada: o projeto considera que reduzir desigualdade e proteger minorias e o meio ambiente é bom para a população. Quem discorda pode zerar esse critério em "Ajustar pesos" no ranking.</li>
           <li>Quantidade não é qualidade. O score mede atividade e custo observáveis; não avalia o mérito ou a orientação política de nenhuma proposta.</li>
           <li>A classificação por tema é automática e acerta em torno de 9 em cada 10 ementas. Erros acontecem, em especial em ementas que só citam o número da lei alterada.</li>
           <li>Só contam proposições em que a pessoa é a primeira autora. Coautorias e trabalho em comissões ainda não entram no score; pareceres de relator aparecem só como tipo de proposição.</li>
@@ -1074,6 +1137,8 @@
         rerender('sec-ranking', secaoRanking); rerender('sec-podios', podios);
         return;
       }
+      const ir = t.closest('[data-filtro-ir]');
+      if (ir) { const b = document.querySelector(`#props-filtros [data-filtro="${ir.dataset.filtroIr}"]`); if (b) { b.click(); $('#props-filtros').scrollIntoView({ behavior: 'smooth', block: 'center' }); } return; }
       const filtro = t.closest('[data-filtro]');
       if (filtro) {
         estado.perfil.filtro = filtro.dataset.filtro; estado.perfil.limite = 15;

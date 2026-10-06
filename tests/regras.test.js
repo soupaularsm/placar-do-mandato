@@ -121,3 +121,39 @@ test('agenda: simbólicas tiram pontos', () => {
   assert.ok(ag({ proposicoes: { por_tema: { saude: 10 } } }) > 0);
   assert.ok(ag({ proposicoes: { por_tema: { saude: 2, simbolica: 10 } } }) < 0);
 });
+
+test('impacto: direção das propostas', async () => {
+  const { impactoDe, regrasAtivas } = await import('../scripts/lib/impacto.js');
+  const padrao = regrasAtivas({ regras: { aborto: true } });
+  const i = (e, t = 'outros') => impactoDe(e, t, padrao);
+  assert.equal(i('Veda a reserva de vagas para candidatos transexuais em concursos públicos'), 'minorias');
+  assert.equal(i('Proíbe a instalação de banheiros unissex nos estabelecimentos comerciais do Estado.'), 'minorias');
+  assert.equal(i('Revoga a Lei nº 16.784, que proíbe a caça no Estado de São Paulo'), 'ambiente');
+  assert.equal(i('Proíbe o emprego da telemedicina em procedimentos de aborto.'), 'aborto');
+  assert.equal(i('Institui o Programa de Atenção Humanizada ao Aborto Legal.'), 'aborto_legal');
+  assert.equal(i('Determina a reserva de 3% das vagas em concursos públicos para pessoas transgênero'), 'desigualdade');
+  assert.equal(i('Institui a Política Estadual de Combate à Fome', 'social'), 'desigualdade');
+  assert.equal(i('Institui o Programa Estadual de Saúde Bucal', 'saude'), 'qualidade');
+  // simbólicas e casos ambíguos ficam neutros
+  assert.equal(i('Institui o Dia Estadual de Combate ao Racismo', 'simbolica'), null);
+  assert.equal(i('Torna obrigatória a instalação de sanitários específicos para pessoas transgênero e não binárias'), null);
+  assert.equal(i('Dispõe sobre o absurdo de taxas bancárias'), null);
+  assert.equal(i('Institui a Política Estadual do Carnaval de Rua', 'cultura'), null);
+  // contestadas desligadas: neutras, e não caem numa regra positiva genérica
+  assert.equal(i('Institui o Programa Escola sem Partido no sistema estadual de ensino', 'educacao'), null);
+  assert.equal(impactoDe('Proíbe o emprego da telemedicina em procedimentos de aborto.', 'saude', regrasAtivas({ regras: { aborto: false } })), null);
+});
+
+test('score: critério de direitos penaliza restrição', async () => {
+  const cfg = {
+    componentes: { direitos: { peso: 1, direcao: 'maior_melhor' } },
+    parametros: { cobertura_minima_para_ranking: 0 },
+    impacto: { peso_amplia: 1, peso_restringe: -2 },
+  };
+  const m = (id, amplia, restringe, substantivas) => ({ id, uf: 'SP', proposicoes: { impacto: { amplia, restringe }, substantivas } });
+  // d: muitos projetos e poucos bons; e: poucos projetos, quase todos bons
+  const [a, b, c, d, e] = calcularScores([m('a', 5, 0, 10), m('b', 5, 3, 10), m('c', 0, 0, 2), m('d', 6, 0, 200), m('e', 4, 0, 5)], cfg);
+  assert.ok(a.score.total > c.score.total);
+  assert.ok(c.score.total > b.score.total);
+  assert.ok(e.score.total > d.score.total, 'proporção vale mais que volume');
+});

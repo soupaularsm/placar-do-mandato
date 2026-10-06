@@ -1,6 +1,6 @@
 {
   "_comentario": "Pesos e parâmetros do score. Os pesos não precisam somar 100: o score normaliza pelos componentes disponíveis. Para criar um critério novo, adicione-o aqui e implemente o cálculo em scripts/lib/score.js (função extratores).",
-  "versao_metodologia": "0.2",
+  "versao_metodologia": "0.3",
   "componentes": {
     "assiduidade": {
       "peso": 20,
@@ -12,6 +12,12 @@
       "peso": 20,
       "rotulo": "Relevância da agenda",
       "descricao": "Soma dos temas das proposições normativas, cada uma com o peso do seu tema. Temas prioritários somam mais; simbólicas e homenagens (nome de via, data comemorativa, feriado, título, utilidade pública) tiram pontos. Escala logarítmica.",
+      "direcao": "maior_melhor"
+    },
+    "direitos": {
+      "peso": 15,
+      "rotulo": "Direitos e qualidade de vida",
+      "descricao": "Direção das proposições normativas. Propostas que reduzem desigualdade, ampliam direitos ou criam política pública de qualidade de vida somam 1; as que restringem direitos de minorias, retiram direitos conquistados ou enfraquecem a proteção ambiental tiram 2. O saldo é dividido pelo número de projetos substantivos (com 5 projetos neutros de suavização), então conta a qualidade, não o volume. Regras publicadas na metodologia; cada proposta marcada aparece no perfil.",
       "direcao": "maior_melhor"
     },
     "producao": {
@@ -118,5 +124,16 @@
         "simbolica"
       ]
     }
+  },
+  "impacto": {
+    "_comentario": "Direção das propostas (scripts/lib/impacto.js). Regras contestadas só valem se ligadas aqui; desligadas, a proposta fica neutra.",
+    "peso_amplia": 1,
+    "peso_restringe": -2,
+    "regras": {
+      "aborto": true,
+      "escola": false,
+      "armas": false
+    },
+    "suavizacao_k": 5
   }
 }
