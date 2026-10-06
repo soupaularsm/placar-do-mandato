@@ -478,6 +478,48 @@
       <circle cx="${x(pts.length - 1)}" cy="${y(u[1])}" r="4" fill="var(--accent)"/></svg>`;
   }
 
+  // Faixas horizontais com números grandes (perfil)
+  function faixa(titulo, sub, itens, extra = '') {
+    return `<section class="faixa-num">
+      <header><h3>${titulo}</h3>${sub ? `<p>${sub}</p>` : ''}</header>
+      <dl class="numeros">${itens.filter(Boolean).map(([v, r, nota, corV]) => `<div><dd${corV ? ` style="color:${corV}"` : ''}>${v}</dd><dt>${r}</dt>${nota ? `<span>${nota}</span>` : ''}</div>`).join('')}</dl>
+      ${extra}
+    </section>`;
+  }
+
+  function faixaPresenca(p) {
+    const pr = p.presenca;
+    const ref = dados.casas[p.casa]?.referencia || {};
+    if (!pr) return faixa('Presença', 'Sem dado de presença para esta casa.', []);
+    const aus = pr.sessoes - pr.presentes;
+    const delta = ref.presenca_taxa != null ? pr.taxa - ref.presenca_taxa : null;
+    const corTaxa = delta == null ? null : delta >= 0 ? 'var(--good)' : delta < -0.05 ? 'var(--bad)' : 'var(--mid)';
+    return faixa('Presença', esc(pr.base), [
+      [pct(pr.taxa, 1), 'de presença', delta == null ? '' : `${delta >= 0 ? '+' : '−'}${Math.abs(delta * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} pontos em relação à mediana`, corTaxa],
+      [fmt(pr.presentes), 'presenças', `em ${fmt(pr.sessoes)} sessões ou votações`],
+      [fmt(aus), 'ausências', pr.justificadas != null ? `${fmt(pr.justificadas)} justificadas` : 'justificativas não publicadas'],
+      [pct(ref.presenca_taxa, 1), 'mediana da casa', `entre ${fmt(ref.n)} parlamentares`],
+    ]);
+  }
+
+  function faixaCustos(p) {
+    const c = p.custos || {};
+    const ref = dados.casas[p.casa]?.referencia || {};
+    const meses = Math.max(1, p.dias_em_exercicio / 30.44);
+    const cats = Object.entries(c.cota_categorias || {}).slice(0, 6);
+    const maxCat = cats[0]?.[1] || 1;
+    const deltaCota = c.cota_mensal_media != null && ref.cota_mensal_media ? c.cota_mensal_media / ref.cota_mensal_media - 1 : null;
+    const corCota = deltaCota == null ? null : deltaCota <= 0 ? 'var(--good)' : deltaCota > 0.15 ? 'var(--bad)' : 'var(--mid)';
+    const extra = cats.length ? `<div class="gastos-grade">${cats.map(([k, v]) => `<div class="gasto"><span>${esc(k.charAt(0) + k.slice(1).toLowerCase())}</span><span>${brl(v)}</span><span class="trilho"><i style="width:${(v / maxCat) * 100}%"></i></span></div>`).join('')}</div>` : '';
+    return faixa('Custos', 'Médias mensais desde o início do mandato.', [
+      [brlMil(c.custo_estimado_mensal), 'custo estimado por mês', p.casa === 'camara' ? 'subsídio, cota e verba de gabinete' : 'subsídio e cota'],
+      [brlMil(c.cota_mensal_media), 'cota parlamentar por mês', deltaCota == null ? '' : `${deltaCota <= 0 ? Math.round(-deltaCota * 100) + '% abaixo' : Math.round(deltaCota * 100) + '% acima'} da mediana de ${brlMil(ref.cota_mensal_media)}`, corCota],
+      c.verba_gabinete_mensal != null ? [brlMil(c.verba_gabinete_mensal), 'verba de gabinete por mês', 'salários da equipe'] : null,
+      [c.assessores ?? '–', 'pessoas no gabinete', ref.assessores_sp != null ? `mediana de SP: ${fmt(ref.assessores_sp)}` : ''],
+      [brlMil(c.cota_total), 'cota no mandato', `em ${Math.round(meses)} meses`],
+    ], extra);
+  }
+
   async function viewPerfil(id) {
     const resumo = dados.parlamentares.find((p) => p.id === id);
     if (!resumo) return '<div class="wrap"><p class="vazio">Parlamentar não encontrado. <a href="#inicio">Voltar ao início</a></p></div>';
@@ -520,35 +562,18 @@
           </div>
         </div>
 
-        <div class="grade">
-          <section class="cartao"><h3>Score por critério</h3><p class="muted">Nota de 0 a 100 em relação aos colegas da mesma casa. 50 é a mediana.</p>${comps}</section>
+        ${faixaPresenca(p)}
+        ${faixaCustos(p)}
+
+        <div class="grade grade-2">
+          <section class="cartao"><h3>Score por critério</h3><p class="muted">Nota de 0 a 100 em relação aos colegas da mesma casa. 50 é a mediana.</p>${comps}
+            <h3 style="margin-top:24px;font-size:17px">Tendência do score</h3>${sparkline(resumo.tendencia || [])}</section>
           <section class="cartao">
             <h3>Onde está o esforço</h3>
             <p class="muted">${pr.normativas ? `${pct(fracSimb(pr))} dos projetos são simbólicos. Na bancada de SP ${NA_CASA[p.casa]}, ${pct(simbBancada)}.` : 'Sem projetos de lei, PECs ou decretos no período.'}</p>
             ${nuvemTipos(pr.por_tipo, p.casa, { links: false })}
             <h3 style="margin-top:24px;font-size:17px">Temas dos projetos</h3>
             ${listaTemas(temasLinhas)}
-          </section>
-          <section class="cartao">
-            <h3>Presença</h3>
-            <div class="kpis">
-              <div class="kpi"><b>${pct(p.presenca?.taxa, 1)}</b><span>${esc(p.presenca?.base || 'sem dado')}</span></div>
-              <div class="kpi"><b>${p.presenca ? fmt(p.presenca.sessoes - p.presenca.presentes) : '–'}</b><span>ausências contadas</span></div>
-              ${p.presenca?.justificadas != null ? `<div class="kpi"><b>${fmt(p.presenca.justificadas)}</b><span>delas justificadas</span></div>` : ''}
-            </div>
-            <h3 style="margin-top:24px;font-size:17px">Tendência do score</h3>
-            ${sparkline(resumo.tendencia || [])}
-          </section>
-          <section class="cartao">
-            <h3>Custos</h3><p class="muted">Médias mensais desde o início do mandato.</p>
-            <div class="kpis">
-              <div class="kpi"><b>${brl(c.custo_estimado_mensal)}</b><span>custo estimado por mês</span></div>
-              <div class="kpi"><b>${brl(c.cota_mensal_media)}</b><span>cota parlamentar por mês</span></div>
-              ${c.verba_gabinete_mensal != null ? `<div class="kpi"><b>${brl(c.verba_gabinete_mensal)}</b><span>verba de gabinete por mês</span></div>` : ''}
-              <div class="kpi"><b>${c.assessores ?? '–'}</b><span>pessoas no gabinete</span></div>
-            </div>
-            ${cats.length ? `<div class="gastos">${cats.map(([k, v]) => `<div class="gasto"><span>${esc(k.charAt(0) + k.slice(1).toLowerCase())}</span><span>${brl(v)}</span><span class="trilho"><i style="width:${(v / maxCat) * 100}%"></i></span></div>`).join('')}</div>
-            <p class="muted" style="font-size:13px;margin-top:12px">Cota total no mandato: ${brl(c.cota_total)} em ${Math.round(meses)} meses.</p>` : ''}
           </section>
           <section class="cartao cheia">
             <h3>Propostas</h3>
