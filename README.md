@@ -29,7 +29,7 @@ npm run update         # coleta real (demora: baixa arquivos grandes da Câmara 
 npm run update -- --casas=senado   # só uma casa; as demais mantêm o último dado
 ```
 
-O endereço `placar-do-mandato-sp.vercel.app` redireciona para o domínio (ver `vercel.json`). DNS na GoDaddy: `A @ → 216.198.79.1` e `CNAME www → <valor da Vercel>`.
+Os endereços `mandato-aberto.vercel.app` e `placar-do-mandato-sp.vercel.app` redirecionam para o domínio (ver `vercel.json`). DNS na GoDaddy: `A @ → 216.198.79.1` e `CNAME www → <valor da Vercel>`.
 
 Antes do primeiro deploy, rode `npm run update` (ou dispare o workflow manualmente) para substituir os dados fictícios por dados reais.
 
