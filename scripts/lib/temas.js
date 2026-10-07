@@ -32,7 +32,8 @@ export const TEMAS = [
   {
     id: 'criancas',
     rotulo: 'Crianças e adolescentes',
-    re: [/crianc|adolescen|infan|menor(es)? de (idade|dezoito)|estatuto da crianca|eca\b|primeira infancia|creche|abuso sexual infantil|pedofil|trabalho infantil|bullying|maternidade|gestante|amamenta|neonat|puerper|orfa/],
+    // gestante/maternidade sozinhas não bastam: direitos trabalhistas da gestante não são pauta de criança
+    re: [/crianc|adolescen|infan|menor(es)? de (idade|dezoito)|estatuto da crianca|\beca\b|primeira infancia|creche|abuso sexual infantil|pedofil|trabalho infantil|bullying(?!.*adult)|neonat|recem[- ]nascid|\bbebes?\b|orfa/],
   },
   {
     id: 'saude',
