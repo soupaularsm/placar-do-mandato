@@ -57,7 +57,7 @@
   const estado = {
     casa: 'camara', busca: '', partido: '', ordem: 'score', tema: '',
     podio: 'todas', pesosAbertos: false, todosTemas: false, rankLimite: 20,
-    ptCasa: 'todas', ptFoco: '', ptOrdem: ['score', 'desc'], ptMembros: false,
+    ptCasa: 'todas', ptFoco: '', ptOrdem: ['score', 'desc'], ptMembros: false, ptMetrica: 'score', ptLimite: 25, ptAutor: '',
     perfil: { filtro: 'todas', tema: '', limite: 15, lista: [] },
   };
 
@@ -569,8 +569,10 @@
     const simbBancada = soma(bancada) ? (bancada.simbolica || 0) / soma(bancada) : 0;
     const comps = Object.entries(dados.componentes).map(([k, cc]) => {
       const v = resumo.score.componentes[k];
-      return `<div class="comp"><span class="rot">${esc(cc.rotulo)}</span><span class="pct" style="color:${cor(v)}">${v == null ? '–' : Math.round(v)}</span>
-        <span class="trilho"><i style="width:${v ?? 0}%;background:${cor(v)}"></i></span><span class="det">${esc(detalheComponente(k, p))}</span></div>`;
+      const ir = { agenda: 'prioritaria', direitos: (resumo.proposicoes?.impacto?.restringe ? 'restringe' : 'amplia'), producao: 'normativa', efetividade: 'aprovada', fiscalizacao: 'fiscalizacao' }[k];
+      const tag = ir ? 'button' : 'div';
+      return `<${tag} ${ir ? `type="button" data-filtro-ir="${ir}" title="Ver as propostas"` : ''} class="comp${ir ? ' comp-link' : ''}"><span class="rot">${esc(cc.rotulo)}${ir ? ' <i class="comp-seta" aria-hidden="true">→</i>' : ''}</span><span class="pct" style="color:${cor(v)}">${v == null ? '–' : Math.round(v)}</span>
+        <span class="trilho"><i style="width:${v ?? 0}%;background:${cor(v)}"></i></span><span class="det">${esc(detalheComponente(k, p))}</span></${tag}>`;
     }).join('');
 
     return `
@@ -592,7 +594,7 @@
         ${faixaCustos(p)}
 
         <div class="grade grade-2">
-          <section class="cartao"><h3>Score por critério</h3><p class="muted">Nota de 0 a 100 em relação aos colegas da mesma casa. 50 é a mediana.</p>${comps}
+          <section class="cartao"><h3>Score por critério</h3><p class="muted">Nota de 0 a 100 em relação aos colegas da mesma casa. 50 é a mediana. Toque num critério para ver as propostas.</p><div class="comps">${comps}</div>
             <h4 class="sub-titulo">Tendência do score</h4>${sparkline(resumo.tendencia || [])}</section>
           <section class="cartao">
             <h3>Onde está o esforço</h3>
@@ -613,7 +615,7 @@
             <div class="empilhada" role="img" aria-label="Situação dos projetos">${Object.entries(STATUS).map(([k, [r, cc]]) => (pr.por_status?.[k] ? `<i style="width:${(pr.por_status[k] / totalSt) * 100}%;background:${cc}" title="${r}: ${pr.por_status[k]}"></i>` : '')).join('')}</div>
             <div class="legenda">${Object.entries(STATUS).map(([k, [r, cc]]) => `<span style="--c:${cc}">${r} ${fmt(pr.por_status?.[k] || 0)}</span>`).join('')}</div>
             <div class="chips filtros-props" id="props-filtros">
-              ${[['todas', 'Todas'], ['normativa', 'Substantivas'], ['aprovada', 'Aprovadas'], ['honorifica', 'Simbólicas'], ...(pr.impacto ? [['amplia', 'Ampliam direitos'], ['restringe', 'Restringem direitos']] : []), ['fiscalizacao', 'Fiscalização']].map(([k, r]) => `<button data-filtro="${k}" aria-pressed="${k === 'todas'}">${r}</button>`).join('')}
+              ${[['todas', 'Todas'], ['normativa', 'Substantivas'], ['prioritaria', 'Prioritárias'], ['aprovada', 'Aprovadas'], ['honorifica', 'Simbólicas'], ...(pr.impacto ? [['amplia', 'Ampliam direitos'], ['restringe', 'Restringem direitos']] : []), ['fiscalizacao', 'Fiscalização']].map(([k, r]) => `<button data-filtro="${k}" aria-pressed="${k === 'todas'}">${r}</button>`).join('')}
               <span class="campo"><label class="visualmente-oculto" for="tema-props">Tema</label><select id="tema-props"><option value="">Todos os temas</option>${temasLinhas.map(([t, n]) => `<option value="${t}">${esc(rotTema(t))} (${n})</option>`).join('')}</select></span>
             </div>
             <ul class="props" id="props">${listaPropsPerfil()}</ul>
@@ -625,7 +627,7 @@
 
   function listaPropsPerfil() {
     const { filtro, tema, limite, lista } = estado.perfil;
-    const f = { todas: () => true, normativa: (x) => x.categoria === 'normativa', aprovada: (x) => x.status === 'aprovada', honorifica: (x) => x.categoria === 'honorifica', fiscalizacao: (x) => x.categoria === 'fiscalizacao',
+    const f = { todas: () => true, normativa: (x) => x.categoria === 'normativa', prioritaria: (x) => x.categoria === 'normativa' && x.tema && grupoTema(x.tema) === 'prio', aprovada: (x) => x.status === 'aprovada', honorifica: (x) => x.categoria === 'honorifica', fiscalizacao: (x) => x.categoria === 'fiscalizacao',
       amplia: (x) => x.impacto && sinalImpacto(x.impacto) > 0, restringe: (x) => x.impacto && sinalImpacto(x.impacto) < 0 }[filtro];
     const itens = (lista || []).filter((x) => f(x) && (!tema || x.tema === tema));
     if (!itens.length) return '<li class="vazio">Nenhuma proposta neste filtro.</li>';
@@ -767,7 +769,7 @@
 
       <div class="wrap secao secao-div">
         <div class="secao-cab"><div><h2>Todos os números</h2>
-          <p>Toque no título de uma coluna para ordenar. Médias por parlamentar.</p></div></div>
+          <p>Toque no título de uma coluna para ordenar e num número para ver os projetos ou parlamentares por trás dele.</p></div></div>
         <div class="cartao pt-tabela-cartao" id="pt-tabela">${tabelaPartidos(L)}</div>
         <p class="pt-nota">O partido é a filiação atual informada pela casa. O score de cada parlamentar compara com colegas da mesma casa, então a média por partido pode juntar Câmara, Senado e ALESP. Gastos de casas diferentes são comparados pela distância até a mediana de cada casa. Se você mudar os pesos no ranking, esta página usa os seus pesos.</p>
       </div>
@@ -777,6 +779,34 @@
   function flutuante() {
     return `<span>Em foco: <b>${esc(estado.ptFoco)}</b></span><button type="button" data-pt-ver>Ver ficha</button><button type="button" data-pt-limpar aria-label="Tirar o foco">✕</button>`;
   }
+
+  // ---------- Ficha do partido: cada número abre o que está por trás dele ----------
+  const detCache = {};
+  const carregarDet = (id) => (detCache[id] ??= fetch(`data/p/${encodeURIComponent(id)}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  const temasDoGrupo = (g) => Object.keys(dados.temas || {}).filter((t) => grupoTema(t) === g).map(rotTema);
+
+  // métricas: tipo 'pessoas' ordena os parlamentares; tipo 'projetos' lista as proposições
+  const METRICAS = {
+    score: { tipo: 'pessoas', titulo: 'Parlamentares por score', explica: 'Do maior para o menor score. Toque para abrir o perfil completo.',
+      ord: (p) => scoreCom(p), val: (p) => n1(scoreCom(p)), cor: (p) => cor(scoreCom(p)) },
+    presenca: { tipo: 'pessoas', titulo: 'Presença de cada parlamentar', explica: 'Do mais ao menos presente, nas sessões ou votações do mandato.',
+      ord: (p) => p.presenca?.taxa, val: (p) => pct(p.presenca?.taxa, 1), sub: (p) => (p.presenca ? `${fmt(Math.round(p.presenca.taxa * p.presenca.sessoes))} de ${fmt(p.presenca.sessoes)}` : 'sem dado') },
+    cota: { tipo: 'pessoas', titulo: 'Gasto com a cota parlamentar', explica: 'Média mensal, do maior para o menor gasto, comparada com a mediana da casa de cada um.',
+      ord: (p) => p.custos?.cota_mensal_media, val: (p) => (p.custos?.cota_mensal_media != null ? `${brlMil(p.custos.cota_mensal_media)}/mês` : '–'),
+      sub: (p) => { const i = cotaIdxDe(p); return i == null ? '' : `${pctS(i)} vs mediana ${DA_CASA[p.casa]}`; },
+      cor: (p) => { const i = cotaIdxDe(p); return i == null ? null : i > 0.15 ? 'var(--bad)' : i <= 0 ? 'var(--good)' : 'var(--mid)'; } },
+    prio: { tipo: 'projetos', titulo: 'Projetos em pautas prioritárias', explica: () => `Projetos de lei, PECs e decretos sobre ${temasDoGrupo('prio').join(', ').toLowerCase()}.`,
+      f: (x) => x.categoria === 'normativa' && x.tema && grupoTema(x.tema) === 'prio' },
+    simb: { tipo: 'projetos', titulo: 'Projetos simbólicos', explica: 'Nome de rua, data comemorativa, título de cidadão, utilidade pública e outras homenagens. Tiram pontos no score.',
+      f: (x) => x.categoria === 'honorifica' || x.tema === 'simbolica' },
+    amplia: { tipo: 'projetos', titulo: 'Propostas que ampliam direitos ou qualidade de vida', explica: 'Cada uma traz a regra que a classificou. As regras estão na metodologia.',
+      f: (x) => x.impacto && sinalImpacto(x.impacto) > 0 },
+    restringe: { tipo: 'projetos', titulo: 'Propostas que restringem direitos', explica: 'Cada uma traz a regra que a classificou. Confira a ementa e o texto oficial pelo link.',
+      f: (x) => x.impacto && sinalImpacto(x.impacto) < 0 },
+    subs: { tipo: 'projetos', titulo: 'Projetos substantivos', explica: 'Projetos de lei, PECs e decretos, sem contar os simbólicos.', f: (x) => x.categoria === 'normativa' },
+    aprov: { tipo: 'projetos', titulo: 'Projetos aprovados', explica: 'Aprovados na casa ou transformados em norma.', f: (x) => x.status === 'aprovada' },
+    fisc: { tipo: 'projetos', titulo: 'Pedidos de informação e fiscalização', explica: 'Requerimentos de informação e propostas de fiscalização do Executivo.', f: (x) => x.categoria === 'fiscalizacao' },
+  };
 
   function fichaPartido() {
     const s = estado.ptFoco;
@@ -791,44 +821,98 @@
       const bom = maiorMelhor ? d >= 0 : d <= 0;
       return `<span class="pt-delta ${Math.abs(d) < 1e-9 ? '' : bom ? 'bom' : 'ruim'}">${f(d)} vs média</span>`;
     };
-    const itens = [
-      ['Score médio', n1(x.score), delta(x.score, G.score, true, n1s), x.score != null ? cor(x.score) : null],
-      ['Presença média', pct(x.presenca, 1), delta(x.presenca, G.presenca, true, (d) => n1s(d * 100) + ' p.p.')],
-      [umaCasa() ? 'Cota por mês' : 'Cota vs mediana da casa', umaCasa() ? brlMil(x.cota) : pctS(x.cotaIdx), umaCasa() ? delta(x.cota, G.cota, false, (d) => (d >= 0 ? '+' : '−') + brlMil(Math.abs(d))) : delta(x.cotaIdx, G.cotaIdx, false, (d) => n1s(d * 100) + ' p.p.')],
-      ['Pautas prioritárias', n1(x.prioPor), delta(x.prioPor, G.prioPor, true, n1s) || '', null, 'projetos por parlamentar'],
-      ['Projetos simbólicos', pct(x.simb), delta(x.simb, G.simb, false, (d) => n1s(d * 100) + ' p.p.')],
-      ...(temImpacto() ? [['Ampliam direitos', pct(x.ampliaPct), '', null, 'dos projetos substantivos'], ['Restringem direitos', fmt(x.restringe), '', x.restringe ? 'var(--coral)' : null, 'propostas no mandato']] : []),
+    const tiles = [
+      ['score', 'Score médio', n1(x.score), delta(x.score, G.score, true, n1s), x.score != null ? cor(x.score) : null],
+      ['presenca', 'Presença média', pct(x.presenca, 1), delta(x.presenca, G.presenca, true, (d) => n1s(d * 100) + ' p.p.')],
+      ['cota', umaCasa() ? 'Cota por mês' : 'Cota vs mediana', umaCasa() ? brlMil(x.cota) : pctS(x.cotaIdx), umaCasa() ? delta(x.cota, G.cota, false, (d) => (d >= 0 ? '+' : '−') + brlMil(Math.abs(d))) : delta(x.cotaIdx, G.cotaIdx, false, (d) => n1s(d * 100) + ' p.p.')],
+      ['prio', 'Pautas prioritárias', n1(x.prioPor), delta(x.prioPor, G.prioPor, true, n1s), null, 'projetos por parlamentar'],
+      ['simb', 'Projetos simbólicos', pct(x.simb), delta(x.simb, G.simb, false, (d) => n1s(d * 100) + ' p.p.')],
+      ...(temImpacto() ? [
+        ['amplia', 'Ampliam direitos', pct(x.ampliaPct), '', 'var(--good)', `${fmt(x.amplia)} propostas`],
+        ['restringe', 'Restringem direitos', fmt(x.restringe), '', x.restringe ? 'var(--coral)' : null, 'propostas no mandato'],
+      ] : []),
     ];
-    const membros = [...x.membros].sort((a, b) => (scoreCom(b) ?? -1) - (scoreCom(a) ?? -1));
+    const m = estado.ptMetrica in METRICAS ? estado.ptMetrica : 'score';
     return `<div class="cartao pt-ficha">
       <header class="pt-ficha-cab">
         <div><h2>${esc(x.sigla)}</h2><p class="muted">${fmt(x.n)} parlamentar${x.n > 1 ? 'es' : ''}${estado.ptCasa === 'todas' ? ` · ${casas}` : ` ${NA_CASA[estado.ptCasa]}`}${x.valido ? '' : ' · com uma só pessoa, a média não representa o partido'}</p></div>
         <button type="button" class="btn" data-pt-limpar>Fechar</button>
       </header>
-      <dl class="numeros pt-ficha-num">${itens.map(([r, v, d, c, sub]) => `<div><dd${c ? ` style="color:${c}"` : ''}>${v}</dd><dt>${r}</dt>${sub ? `<span>${sub}</span>` : ''}${d}</div>`).join('')}</dl>
-      <h4 class="sub-titulo">Parlamentares do ${esc(x.sigla)}</h4>
-      <ul class="pt-membros">${membros.slice(0, estado.ptMembros ? Infinity : 12).map((p) => { const v = scoreCom(p); return `<li><a href="#p-${esc(p.id)}">${foto(p)}<span><b>${esc(p.nome)}</b><small>${rotCasa(p.casa)}</small></span><span class="pt-m-score" style="color:${cor(v)}">${v == null ? '–' : n1(v)}</span></a></li>`; }).join('')}</ul>
-      ${membros.length > 12 ? `<button type="button" class="ver-todos" data-pt-membros>${estado.ptMembros ? 'Mostrar menos' : `Ver os ${membros.length} parlamentares`}</button>` : ''}
+      <p class="pt-dica">Toque num número para ver o que está por trás dele.</p>
+      <div class="pt-tiles" role="group" aria-label="Indicadores do partido">${tiles.map(([k, r, v, d, c, sub]) => `<button type="button" class="pt-tile" data-pt-metrica="${k}" aria-pressed="${k === m}">
+        <b${c ? ` style="color:${c}"` : ''}>${v}</b><span class="pt-tile-rot">${r}</span>${sub ? `<span class="pt-tile-sub">${sub}</span>` : ''}${d}<i class="pt-tile-seta" aria-hidden="true">→</i></button>`).join('')}</div>
+      <div id="pt-detalhe" class="pt-detalhe" aria-live="polite"></div>
     </div>`;
+  }
+
+  async function renderDetalhe() {
+    const el = document.getElementById('pt-detalhe');
+    if (!el) return;
+    const x = dadosPartidos().find((y) => y.sigla === estado.ptFoco);
+    if (!x) { el.innerHTML = ''; return; }
+    const k = estado.ptMetrica in METRICAS ? estado.ptMetrica : 'score';
+    const M = METRICAS[k];
+    const explica = typeof M.explica === 'function' ? M.explica() : M.explica;
+    const cab = (n) => `<div class="pt-det-cab"><div><h3>${M.titulo}${n != null ? ` <span>${fmt(n)}</span>` : ''}</h3><p class="muted">${esc(explica)}</p></div></div>`;
+
+    if (M.tipo === 'pessoas') {
+      const ms = [...x.membros].sort((a, b) => (M.ord(b) ?? -Infinity) - (M.ord(a) ?? -Infinity));
+      const lim = estado.ptMembros ? Infinity : 12;
+      el.innerHTML = cab(null) + `<ul class="pt-membros">${ms.slice(0, lim).map((p) => `<li><a href="#p-${esc(p.id)}">${foto(p)}<span><b>${esc(p.nome)}</b><small>${rotCasa(p.casa)}${M.sub ? ` · ${esc(M.sub(p))}` : ''}</small></span><span class="pt-m-score"${M.cor ? ` style="color:${M.cor(p) || 'inherit'}"` : ''}>${M.val(p)}</span></a></li>`).join('')}</ul>
+        ${ms.length > 12 ? `<button type="button" class="ver-todos" data-pt-membros>${estado.ptMembros ? 'Mostrar menos' : `Ver os ${ms.length} parlamentares`}</button>` : ''}`;
+      return;
+    }
+
+    el.innerHTML = cab(null) + '<p class="vazio">Carregando as proposições…</p>';
+    const token = (renderDetalhe.token = (renderDetalhe.token || 0) + 1);
+    const dets = await Promise.all(x.membros.map((p) => carregarDet(p.id).then((d) => [p, d])));
+    if (token !== renderDetalhe.token) return; // o usuário já trocou de métrica
+    const itens = [];
+    let truncado = false;
+    for (const [p, d] of dets) {
+      if (!d) continue;
+      if (d.proposicoes?.lista_truncada) truncado = true;
+      for (const it of d.proposicoes?.lista || []) if (M.f(it)) itens.push([it, p]);
+    }
+    itens.sort((a, b) => String(b[0].data || b[0].ano).localeCompare(String(a[0].data || a[0].ano)));
+    const porAutor = {};
+    for (const [, p] of itens) porAutor[p.id] = (porAutor[p.id] || 0) + 1;
+    const autores = Object.entries(porAutor).sort((a, b) => b[1] - a[1]).map(([id, n]) => [x.membros.find((p) => p.id === id), n]);
+    const filtroAutor = estado.ptAutor && porAutor[estado.ptAutor] ? estado.ptAutor : '';
+    const lista = filtroAutor ? itens.filter(([, p]) => p.id === filtroAutor) : itens;
+    const lim = estado.ptLimite;
+    el.innerHTML = cab(itens.length) + (itens.length ? `
+      ${autores.length > 1 ? `<div class="chips pt-autores" aria-label="Filtrar por autor"><button type="button" data-pt-autor="" aria-pressed="${!filtroAutor}">Todos</button>${autores.map(([p, n]) => `<button type="button" data-pt-autor="${esc(p.id)}" aria-pressed="${p.id === filtroAutor}">${esc(p.nome)} <span class="chip-n">${n}</span></button>`).join('')}</div>` : ''}
+      <ul class="props">${lista.slice(0, lim).map(([it, p]) => itemProposta(it, p)).join('')}</ul>
+      ${lista.length > lim ? `<button type="button" class="btn mais" data-pt-mais>Mostrar mais (${fmt(lim)} de ${fmt(lista.length)})</button>` : ''}
+      ${truncado ? '<p class="pt-nota">Para quem tem muitas proposições, o site guarda as 400 mais recentes de cada parlamentar; os totais dos números acima consideram todas.</p>' : ''}`
+      : '<p class="vazio">Nenhuma proposição nesta categoria.</p>');
+  }
+
+  /** Abre a ficha de um partido já na métrica pedida (usado pelos destaques, gráficos e tabela). */
+  function abrirFicha(sigla, metrica) {
+    estado.ptFoco = sigla; estado.ptMetrica = metrica || 'score'; estado.ptLimite = 25; estado.ptAutor = ''; estado.ptMembros = false;
+    atualizarFoco();
+    document.getElementById('pt-ficha')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function destaquesPartidos(V) {
     const ok = (f) => V.filter((x) => f(x) != null);
     const ext = (f, asc) => ok(f).sort((a, b) => (asc ? f(a) - f(b) : f(b) - f(a)))[0];
-    const cartao = (x, rotulo, valor, sub) => (x ? `<button type="button" class="pt-dest" data-partido-foco="${esc(x.sigla)}" data-pt="${esc(x.sigla)}">
+    const cartao = (x, rotulo, valor, sub, met) => (x ? `<button type="button" class="pt-dest" data-pt-abrir="${esc(x.sigla)}|${met}" data-pt="${esc(x.sigla)}">
       <span class="pt-dest-rot">${rotulo}</span><span class="pt-dest-sigla${x.sigla.length > 8 ? ' l2' : x.sigla.length > 5 ? ' l1' : ''}">${esc(x.sigla)}</span><span class="pt-dest-val">${valor}</span><span class="pt-dest-sub">${sub(x)}</span></button>` : '');
     const nP = (x) => `${x.n} parlamentar${x.n > 1 ? 'es' : ''}`;
     const bons = [
-      cartao(ext((x) => x.score), 'Maior score médio', n1(ext((x) => x.score)?.score), nP),
-      cartao(ext((x) => x.cotaIdx, true), 'Gasta menos na cota', fmtCota(ext((x) => x.cotaIdx, true) || {}), nP),
-      temImpacto() ? cartao(ext((x) => x.ampliaPct), 'Mais propostas que ampliam direitos', `${pct(ext((x) => x.ampliaPct)?.ampliaPct)} dos projetos`, nP) : '',
-      cartao(ext((x) => x.prioPor), 'Mais pautas prioritárias', `${n1(ext((x) => x.prioPor)?.prioPor)} por parlamentar`, nP),
+      cartao(ext((x) => x.score), 'Maior score médio', n1(ext((x) => x.score)?.score), nP, 'score'),
+      cartao(ext((x) => x.cotaIdx, true), 'Gasta menos na cota', fmtCota(ext((x) => x.cotaIdx, true) || {}), nP, 'cota'),
+      temImpacto() ? cartao(ext((x) => x.ampliaPct), 'Mais propostas que ampliam direitos', `${pct(ext((x) => x.ampliaPct)?.ampliaPct)} dos projetos`, nP, 'amplia') : '',
+      cartao(ext((x) => x.prioPor), 'Mais pautas prioritárias', `${n1(ext((x) => x.prioPor)?.prioPor)} por parlamentar`, nP, 'prio'),
     ];
     const ruins = [
-      cartao(ext((x) => x.score, true), 'Menor score médio', n1(ext((x) => x.score, true)?.score), nP),
-      cartao(ext((x) => x.cotaIdx), 'Gasta mais na cota', fmtCota(ext((x) => x.cotaIdx) || {}), nP),
-      temImpacto() ? cartao(ext((x) => (x.restringe ? x.restringePor : null)), 'Mais propostas que restringem direitos', (() => { const y = ext((x) => (x.restringe ? x.restringePor : null)); return y ? `${fmt(y.restringe)} proposta${y.restringe > 1 ? 's' : ''}` : ''; })(), nP) : '',
-      cartao(ext((x) => x.simb), 'Mais projetos simbólicos', `${pct(ext((x) => x.simb)?.simb)} dos projetos`, nP),
+      cartao(ext((x) => x.score, true), 'Menor score médio', n1(ext((x) => x.score, true)?.score), nP, 'score'),
+      cartao(ext((x) => x.cotaIdx), 'Gasta mais na cota', fmtCota(ext((x) => x.cotaIdx) || {}), nP, 'cota'),
+      temImpacto() ? cartao(ext((x) => (x.restringe ? x.restringePor : null)), 'Mais propostas que restringem direitos', (() => { const y = ext((x) => (x.restringe ? x.restringePor : null)); return y ? `${fmt(y.restringe)} proposta${y.restringe > 1 ? 's' : ''}` : ''; })(), nP, 'restringe') : '',
+      cartao(ext((x) => x.simb), 'Mais projetos simbólicos', `${pct(ext((x) => x.simb)?.simb)} dos projetos`, nP, 'simb'),
     ];
     if (V.length < 2) return '<p class="vazio">Poucos partidos para comparar nesta casa.</p>';
     return `<div class="podios">
@@ -922,9 +1006,9 @@
       <div class="pt-dir-cab" aria-hidden="true"><span></span><span class="ruim">restringem direitos</span><span></span><span class="bom">ampliam direitos</span><span></span></div>
       ${L.map((x) => `<div class="pt-dir-linha" data-pt="${esc(x.sigla)}">
         <button type="button" class="pt-sigla" data-partido-foco="${esc(x.sigla)}">${esc(x.sigla)}<small>${x.n}</small></button>
-        <span class="pt-dir-n ruim">${x.restringe ? fmt(x.restringe) : ''}</span>
+        <span class="pt-dir-n ruim">${x.restringe ? `<button type="button" class="pt-num-link ruim" data-pt-abrir="${esc(x.sigla)}|restringe" title="Ver as propostas">${fmt(x.restringe)}</button>` : ''}</span>
         <span class="pt-dir"><span class="esq">${x.restringe ? `<i style="width:${(x.restringe / maxR) * 100}%"></i>` : ''}</span><span class="dir"><i style="width:${((x.ampliaPct || 0) / maxA) * 100}%"></i></span></span>
-        <span class="pt-dir-n bom">${pct(x.ampliaPct)}</span>
+        <span class="pt-dir-n bom"><button type="button" class="pt-num-link bom" data-pt-abrir="${esc(x.sigla)}|amplia" title="Ver as propostas">${pct(x.ampliaPct)}</button></span>
       </div>`).join('')}
       <div class="legenda"><span style="--c:var(--coral)">Propostas que restringem (total)</span><span style="--c:var(--good)">Fatia dos projetos que ampliam</span></div>
     </div>`;
@@ -941,7 +1025,7 @@
         return `<div class="pt-div-linha" data-pt="${esc(x.sigla)}">
           <button type="button" class="pt-sigla" data-partido-foco="${esc(x.sigla)}">${esc(x.sigla)}<small>${x.n}</small></button>
           <span class="pt-div"><i class="${x.cotaIdx > 0 ? 'ruim' : 'bom'}" style="${x.cotaIdx > 0 ? 'left' : 'right'}:50%;width:${w}%"></i></span>
-          <span class="pt-valor"><b class="${x.cotaIdx > 0 ? 'ruim' : 'bom'}">${pctS(x.cotaIdx)}</b>${umaCasa() && x.cota != null ? `<small>${brlMil(x.cota)}/mês</small>` : ''}</span>
+          <button type="button" class="pt-valor pt-num-link" data-pt-abrir="${esc(x.sigla)}|cota" title="Ver o gasto de cada parlamentar"><b class="${x.cotaIdx > 0 ? 'ruim' : 'bom'}">${pctS(x.cotaIdx)}</b>${umaCasa() && x.cota != null ? `<small>${brlMil(x.cota)}/mês</small>` : ''}</button>
         </div>`;
       }).join('')}
     </div>`;
@@ -959,13 +1043,14 @@
           <span class="pt-pilha" title="${esc(x.sigla)}: ${x.grupos.prio} prioritários, ${x.grupos.rel} relevantes, ${x.grupos.comp} complementares, ${x.grupos.neg} simbólicos">
             ${['prio', 'rel', 'comp', 'neg'].map((k) => (x.grupos[k] ? `<i style="width:${(x.grupos[k] / tot) * 100}%;background:${cores[k]}"></i>` : '')).join('')}
           </span>
-          <span class="pt-valor"><b>${n1(x.prioPor)}</b><small>prioritários/parl.</small></span>
+          <button type="button" class="pt-valor pt-num-link" data-pt-abrir="${esc(x.sigla)}|prio" title="Ver os projetos"><b>${n1(x.prioPor)}</b><small>prioritários/parl.</small></button>
         </div>`;
       }).join('')}
       <div class="legenda"><span style="--c:${cores.prio}">Prioritários</span><span style="--c:${cores.rel}">Relevantes</span><span style="--c:${cores.comp}">Complementares</span><span style="--c:${cores.neg}">Simbólicos</span></div>
     </div>`;
   }
 
+  const MET_COL = { n: 'score', score: 'score', presenca: 'presenca', cotaIdx: 'cota', projPor: 'subs', prioPor: 'prio', aprovPor: 'aprov', simb: 'simb', fiscPor: 'fisc', ampliaPct: 'amplia', restringe: 'restringe' };
   function tabelaPartidos(L = dadosPartidos()) {
     const cols = [
       ['n', 'Parlamentares', (x) => x.n, fmt, 'neutro'],
@@ -997,7 +1082,7 @@
       <thead><tr><th scope="col">Partido</th>${cols.map(([key, r]) => `<th scope="col" aria-sort="${key === k ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}"><button type="button" data-pt-ord="${key}">${r}${key === k ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`).join('')}</tr></thead>
       <tbody>${lista.map((x) => `<tr data-pt="${esc(x.sigla)}"${x.valido ? '' : ' class="pt-fraco"'}>
         <th scope="row"><button type="button" class="pt-sigla" data-partido-foco="${esc(x.sigla)}">${esc(x.sigla)}</button></th>
-        ${cols.map(([key, , f, fm, sentido]) => { const v = f(x); return `<td><span class="pt-cel ${sentido}" style="--w:${x.valido ? larg(key, v) : 0}%">${fm(v, x)}</span></td>`; }).join('')}
+        ${cols.map(([key, , f, fm, sentido]) => { const v = f(x); const met = MET_COL[key]; const cel = `<span class="pt-cel ${sentido}" style="--w:${x.valido ? larg(key, v) : 0}%">${fm(v, x)}</span>`; return `<td>${met ? `<button type="button" class="pt-cel-btn" data-pt-abrir="${esc(x.sigla)}|${met}" title="Ver detalhes">${cel}</button>` : cel}</td>`; }).join('')}
       </tr>`).join('')}</tbody></table></div>
       ${L.some((x) => !x.valido) ? '<p class="pt-nota">Em cinza, partidos com um só parlamentar.</p>' : ''}`;
   }
@@ -1014,6 +1099,7 @@
   }
   function atualizarFoco() {
     rerender('pt-ficha', fichaPartido);
+    renderDetalhe();
     aplicarFoco();
     history.replaceState(null, '', '#partidos' + (estado.ptFoco ? ':' + encodeURIComponent(estado.ptFoco) : ''));
   }
@@ -1081,7 +1167,7 @@
       html = viewInicio();
     }
     app.innerHTML = html;
-    if (nav === 'partidos') aplicarFoco();
+    if (nav === 'partidos') { aplicarFoco(); renderDetalhe(); }
     document.querySelectorAll('[data-nav]').forEach((a) => (a.dataset.nav === nav ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
     $('[data-nav="tipo"]').setAttribute('href', `#tipo-${estado.casa}-lei`);
     if (rolar) document.getElementById(rolar)?.scrollIntoView();
@@ -1099,10 +1185,21 @@
     app.addEventListener('click', (e) => {
       const t = e.target;
       const ptc = t.closest('[data-pt-casa]');
-      if (ptc) { estado.ptCasa = ptc.dataset.ptCasa; rerender('pg-partidos', conteudoPartidos); aplicarFoco(); return; }
+      if (ptc) { estado.ptCasa = ptc.dataset.ptCasa; rerender('pg-partidos', conteudoPartidos); aplicarFoco(); renderDetalhe(); return; }
       const pf = t.closest('[data-partido-foco]');
-      if (pf) { const s = pf.dataset.partidoFoco; estado.ptFoco = estado.ptFoco === s ? '' : s; estado.ptMembros = false; atualizarFoco(); return; }
-      if (t.closest('[data-pt-membros]')) { estado.ptMembros = !estado.ptMembros; rerender('pt-ficha', fichaPartido); return; }
+      if (pf) { const s = pf.dataset.partidoFoco; estado.ptFoco = estado.ptFoco === s ? '' : s; estado.ptMembros = false; estado.ptMetrica = 'score'; estado.ptAutor = ''; atualizarFoco(); return; }
+      if (t.closest('[data-pt-membros]')) { estado.ptMembros = !estado.ptMembros; renderDetalhe(); return; }
+      const ab = t.closest('[data-pt-abrir]');
+      if (ab) { const [sg, met] = ab.dataset.ptAbrir.split('|'); abrirFicha(sg, met); return; }
+      const pm = t.closest('[data-pt-metrica]');
+      if (pm) {
+        estado.ptMetrica = pm.dataset.ptMetrica; estado.ptLimite = 25; estado.ptAutor = ''; estado.ptMembros = false;
+        document.querySelectorAll('[data-pt-metrica]').forEach((b) => b.setAttribute('aria-pressed', b === pm));
+        renderDetalhe(); return;
+      }
+      const pa = t.closest('[data-pt-autor]');
+      if (pa) { estado.ptAutor = pa.dataset.ptAutor; estado.ptLimite = 25; renderDetalhe(); return; }
+      if (t.closest('[data-pt-mais]')) { estado.ptLimite += 50; renderDetalhe(); return; }
       if (t.closest('[data-pt-limpar]')) { estado.ptFoco = ''; atualizarFoco(); return; }
       if (t.closest('[data-pt-ver]')) { $('#pt-ficha')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
       const po = t.closest('[data-pt-ord]');

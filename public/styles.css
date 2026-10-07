@@ -622,3 +622,41 @@ main > .wrap.secao:last-child { padding-bottom: 0; }
   .pt-dir-cab { grid-template-columns: 88px 26px minmax(0, 1fr) minmax(0, 1fr) 40px; gap: 8px; }
   .pt-dest-grade { grid-template-columns: 1fr; }
 }
+
+/* ---------- Números que levam à informação ---------- */
+.comps > .comp:first-child { border-top: 0; margin-top: var(--s-2); }
+.comp-link { width: 100%; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); font: inherit; color: inherit; cursor: pointer; padding-inline: 12px; margin-inline: -12px; width: calc(100% + 24px); border-radius: var(--r-sm); }
+.comp-link:hover { background: var(--soft); }
+.comp-seta { font-style: normal; color: var(--faint); margin-left: 4px; transition: transform .15s; display: inline-block; }
+.comp-link:hover .comp-seta { transform: translateX(3px); color: var(--ink); }
+
+.pt-dica { font-size: 14px; color: var(--muted); margin-top: var(--s-5); }
+.pt-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+.pt-tile {
+  position: relative; display: grid; align-content: start; gap: 6px; text-align: left; background: var(--soft); border: 1px solid transparent;
+  border-radius: var(--r); padding: var(--s-5) var(--s-4) var(--s-4); cursor: pointer; font: inherit; color: inherit; min-width: 0;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.pt-tile:hover { border-color: var(--line); background: var(--surface); transform: translateY(-1px); }
+.pt-tile[aria-pressed="true"] { background: var(--surface); border-color: var(--ink); box-shadow: var(--shadow); }
+.pt-tile > b { font-size: 34px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.pt-tile-rot { font-size: 14px; font-weight: 700; margin-top: 4px; }
+.pt-tile-sub { font-size: 12px; color: var(--muted); }
+.pt-tile .pt-delta { justify-self: start; margin-top: 2px; }
+.pt-tile-seta { position: absolute; top: 14px; right: 14px; font-style: normal; color: var(--faint); font-size: 16px; transition: transform .15s; }
+.pt-tile:hover .pt-tile-seta, .pt-tile[aria-pressed="true"] .pt-tile-seta { color: var(--ink); transform: translateX(2px); }
+.pt-detalhe { margin-top: var(--s-6); padding-top: var(--s-6); border-top: 1px solid var(--line); scroll-margin-top: 96px; }
+.pt-det-cab h3 { font-size: 22px; font-weight: 800; }
+.pt-det-cab h3 span { color: var(--muted); font-weight: 600; margin-left: 4px; }
+.pt-det-cab p { margin-top: var(--s-2); font-size: 14px; max-width: 80ch; }
+.pt-autores { margin-top: var(--s-5); }
+.pt-autores button { white-space: nowrap; }
+
+.pt-num-link { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; padding: 2px 6px; margin: -2px -6px; border-radius: 6px; text-align: right; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; transition: text-decoration-color .15s, background .15s; }
+.pt-num-link:hover { background: var(--soft); text-decoration-color: currentColor; }
+.pt-num-link.ruim { color: var(--coral); font-weight: 800; }
+.pt-num-link.bom { color: var(--good); font-weight: 800; }
+button.pt-valor { display: block; width: auto; justify-self: end; }
+.pt-cel-btn { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; border-radius: 6px; }
+.pt-cel-btn:hover .pt-cel { outline: 1.5px solid var(--ink); outline-offset: 1px; }
+@media (max-width: 600px) { .pt-tiles { grid-template-columns: 1fr 1fr; } .pt-tile > b { font-size: 28px; } }
