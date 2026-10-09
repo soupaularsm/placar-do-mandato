@@ -1,6 +1,6 @@
 {
   "_comentario": "Pesos e parâmetros do score. Os pesos não precisam somar 100: o score normaliza pelos componentes disponíveis. Para criar um critério novo, adicione-o aqui e implemente o cálculo em scripts/lib/score.js (função extratores).",
-  "versao_metodologia": "0.3",
+  "versao_metodologia": "0.4",
   "componentes": {
     "assiduidade": {
       "peso": 20,

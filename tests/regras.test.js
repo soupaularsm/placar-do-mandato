@@ -157,3 +157,15 @@ test('score: critério de direitos penaliza restrição', async () => {
   assert.ok(c.score.total > b.score.total);
   assert.ok(e.score.total > d.score.total, 'proporção vale mais que volume');
 });
+
+test('laicidade: oficializar uma fé tira pontos, inclusive em simbólicas', async () => {
+  const { impactoDe } = await import('../scripts/lib/impacto.js');
+  assert.equal(impactoDe('Determina a utilização da Bíblia Sagrada como recurso paradidático nas escolas públicas.', 'educacao'), 'laicidade');
+  assert.equal(impactoDe('Reconhece o Cristianismo como de relevante interesse cultural do Estado.', 'cultura'), 'laicidade');
+  assert.equal(impactoDe('Institui o "Dia com Deus".', 'simbolica'), 'laicidade');
+  assert.equal(impactoDe('Proíbe o sacrifício de animais em rituais religiosos.', 'ambiente'), 'laicidade');
+  // não confundir: proteção a religiões minoritárias, festas populares e palavras parecidas
+  assert.equal(impactoDe('Institui o Programa de Combate ao Racismo Religioso.', 'social'), 'desigualdade');
+  assert.equal(impactoDe('Declara patrimônio imaterial a Festa do Senhor Bom Jesus de Iguape.', 'simbolica'), null);
+  assert.equal(impactoDe('Institui o Programa de Combate à Exploração Sexual Infantil nas escolas estaduais.', 'seguranca'), null);
+});

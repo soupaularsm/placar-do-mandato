@@ -62,6 +62,23 @@ export const REGRAS = [
       /(flexibiliz|precariz)\w*\b.{0,40}\b(direitos trabalhistas|jornada de trabalho|clt\b)/,
     ],
   },
+  {
+    // Vale também para projetos simbólicos (datas, títulos): oficializar uma fé é o problema em si.
+    id: 'laicidade', sinal: -1, rotulo: 'Fere a laicidade do Estado', simbolicas: true,
+    descricao: 'Usa a estrutura do Estado para adotar ou privilegiar uma religião: Bíblia ou oração em escolas e órgãos públicos, cristianismo ou "princípios cristãos" como política oficial, crucifixos em repartições, datas e bancadas confessionais, proteção penal só para uma fé, ou restrições a religiões de matriz africana. Festas populares tradicionais e o combate à intolerância religiosa não contam.',
+    exceto: [/intolerancia religiosa|racismo religioso|combate a discriminacao|liberdade religiosa de (todas|qualquer)/],
+    re: [
+      /biblia\b.{0,120}\b(escolas?|ensino|paradidatic|sala de aula|orgaos? publicos?|repartico\w* publica)|(leitura|uso|utilizacao|distribuicao)\b.{0,25}\bbiblia/,
+      /(reconhece|declara|institui)\w*\b.{0,30}\bcristianismo|cristianismo como/,
+      /(cruz|crucifixo)\b.{0,200}\b(fixacao|afixa\w*|orgaos|reparticoes|predios publicos)/,
+      /principios cristaos|valores cristaos|familia crista|dia com deus|deus seja louvado/,
+      /(vilipendio|ultraje|satira|ridiculariz|menosprez)\w*\b.{0,80}\b(religiao crista|crencas? crista|dogmas?\b.{0,40}\bcrist|fe crista)/,
+      /bancada (crista|evangelica|catolica)|frente parlamentar (crista|evangelica|catolica)/,
+      /\b(oracao|pai nosso|leitura biblica)\b.{0,60}\b(obrigatori|nas escolas|inicio das aulas|sessoes)|ensino religioso (confessional|obrigatorio)/,
+      /(proib|veda|restring|criminaliz)\w*\b.{0,80}\b(sacrificio|abate)\b.{0,30}\b(religios|ritual|rituais|cultos?)/,
+      /(proib|veda|restring)\w*\b.{0,60}\b(religio\w* de matriz(es)? africana|candomble|umbanda|terreiros?)/,
+    ],
+  },
   // contestadas: desligadas por padrão
   {
     id: 'escola', sinal: -1, rotulo: 'Restringe a liberdade de ensinar', contestada: true,
@@ -125,14 +142,17 @@ const limpar = (t) => norm(t).replace(/["“”'‘’«»]/g, '');
 
 /**
  * Regra de impacto que casa com a ementa, ou null.
- * Simbólicas nunca recebem impacto (já perdem pontos pelo tema).
+ * Simbólicas só recebem impacto de regras marcadas `simbolicas` (hoje, laicidade);
+ * as demais já perdem pontos pelo tema.
  * Uma ementa que casa com uma regra contestada desligada fica neutra:
  * não pode cair numa regra positiva genérica por acidente.
  */
 export function impactoDe(ementa = '', tema = null, ativas = ativasPadrao || regrasAtivas()) {
-  if (!ementa || tema === 'simbolica') return null;
+  if (!ementa) return null;
+  const simb = tema === 'simbolica';
   const e = limpar(ementa);
   for (const r of REGRAS) {
+    if (simb && !r.simbolicas) continue;
     if (r.temas && !r.temas.includes(tema)) continue;
     if (!r.re.some((x) => x.test(e))) continue;
     if (r.exceto?.some((x) => x.test(e))) return null;
