@@ -6,13 +6,26 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { get, pool } from './lib/http.js';
 
-// Retrato quadrado de 320 px, leve o bastante para listas no celular
-const reduzir = (buf) => sharp(buf).rotate().resize(320, 320, { fit: 'cover', position: 'attention' }).jpeg({ quality: 78, mozjpeg: true }).toBuffer();
+// Retrato quadrado de 320 px, leve o bastante para listas no celular.
+// Foto vertical (corpo inteiro ou meio corpo): recorta o quadrado do alto, onde fica o rosto.
+// O recorte "attention" do sharp às vezes escolhe a camisa e corta a cabeça.
+async function reduzir(buf) {
+  const img = sharp(buf).rotate();
+  const { width: w, height: h } = await img.metadata();
+  const base = w && h && h > w * 1.1
+    ? img.extract({ left: 0, top: Math.round(Math.min(h * 0.03, h - w)), width: w, height: w })
+    : img;
+  return base.resize(320, 320, { fit: 'cover', position: 'attention' }).jpeg({ quality: 78, mozjpeg: true }).toBuffer();
+}
+// Mude quando a regra de recorte mudar: força baixar e recortar tudo de novo.
+const VERSAO_RECORTE = '2';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const DATA = path.join(ROOT, 'public', 'data');
 const PASTA = path.join(DATA, 'fotos');
 fs.mkdirSync(PASTA, { recursive: true });
+const marca = path.join(PASTA, '.recorte');
+const refazer = (fs.existsSync(marca) ? fs.readFileSync(marca, 'utf8').trim() : '') !== VERSAO_RECORTE;
 
 const latest = JSON.parse(fs.readFileSync(path.join(DATA, 'latest.json'), 'utf8'));
 const ehImagem = (b) => b && b.length > 1500 && ((b[0] === 0xff && b[1] === 0xd8) || (b[0] === 0x89 && b[1] === 0x50) || b.subarray(0, 4).toString() === 'RIFF');
@@ -40,7 +53,7 @@ await pool(latest.parlamentares, 4, async (p) => {
     // foto antiga, salva no tamanho original: reduz e segue
     fs.writeFileSync(destino, await reduzir(fs.readFileSync(destino)));
   }
-  if (fs.existsSync(destino) && (Date.now() - fs.statSync(destino).mtimeMs) / 864e5 < 30) {
+  if (!refazer && fs.existsSync(destino) && (Date.now() - fs.statSync(destino).mtimeMs) / 864e5 < 30) {
     p.foto = `data/fotos/${p.id}.jpg`;
     ok++;
     return;
@@ -54,9 +67,11 @@ await pool(latest.parlamentares, 4, async (p) => {
       return;
     }
   }
+  if (fs.existsSync(destino)) { p.foto = `data/fotos/${p.id}.jpg`; ok++; return; } // mantém a anterior
   p.foto = null;
   falhas.push(p.nome);
 });
+fs.writeFileSync(marca, VERSAO_RECORTE);
 
 fs.writeFileSync(path.join(DATA, 'latest.json'), JSON.stringify(latest));
 console.log(`Fotos: ${ok} ok, ${falhas.length} sem foto${falhas.length ? ` (${falhas.slice(0, 10).join(', ')}${falhas.length > 10 ? '…' : ''})` : ''}`);
