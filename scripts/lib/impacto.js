@@ -79,6 +79,18 @@ export const REGRAS = [
       /(proib|veda|restring)\w*\b.{0,60}\b(religio\w* de matriz(es)? africana|candomble|umbanda|terreiros?)/,
     ],
   },
+  {
+    id: 'trabalho_restringe', sinal: -1, rotulo: 'Restringe direitos trabalhistas',
+    descricao: 'Libera trabalho em feriados sem acordo com o sindicato, permite desconto no salário por banco de horas, limita o alcance de ações coletivas de sindicatos, reduz cotas de aprendizes ou derruba normas de proteção ao trabalhador.',
+    re: [
+      /trabalho em feriados\b.{0,100}\b(independentemente|sem (a )?(previa )?(autorizacao|convencao|negociacao)|acordos? diretos?)/,
+      /susta\w*\b.{0,120}\bportaria\b.{0,30}\b3\.?665\b/,
+      /desconto salarial por saldo negativo/,
+      /limites? territoria\w*\b.{0,80}\b(acoes coletivas|entidades sindicais)/,
+      /cota de aprendizes nao se aplica/,
+      /^susta\w*\b.{0,200}\b(valorizacao|protecao|saude|seguranca|direitos)\b.{0,40}\b(d[oa]s?) (trabalhador|empregad)/,
+    ],
+  },
   // contestadas: desligadas por padrão
   {
     id: 'escola', sinal: -1, rotulo: 'Restringe a liberdade de ensinar', contestada: true,
@@ -92,6 +104,29 @@ export const REGRAS = [
   },
 
   // ---------- AMPLIAM ----------
+  {
+    id: 'trabalho_amplia', sinal: 1, rotulo: 'Amplia direitos trabalhistas',
+    descricao: 'Fim da escala 6x1 ou redução de jornada, piso salarial, estabilidade no emprego, intervalos e descanso, adicional de insalubridade ou periculosidade, combate ao trabalho escravo e ao assédio no trabalho, direito à desconexão, licença-maternidade e paternidade, proteção à saúde de quem trabalha.',
+    exceto: [/adequar o delito/, /progressao de regime/, /animal de estimacao/, /microempreendedor individual/, /^susta/],
+    re: [
+      /\b6x1\b|escala de trabalho 5x2|reducao da jornada de trabalho para quatro dias|jornada semanal de 40|jornadas? de trabalho mais humanizad|jornadas e escalas ilegais/,
+      /piso salarial|piso nacional salarial|salario profissional/,
+      /estabilidade (provisoria )?(d[ao]s? )?(gestante|empregad)|garantia (provisoria )?de emprego|estabilidade da gestante/,
+      /(trabalho|trabalhadores?)\b.{0,40}\b(em )?condic\w* analog\w* (a|as) (de )?escrav|reducao a condicao analoga|condicao analoga a de escravo|cadastro de empregadores/,
+      /(onus da prova|testemunhas?)\b.{0,60}\bassedio|empresas condenadas por assedio|prevencao de acidentes e de assedio|assedio\w*\b.{0,40}\bambiente de trabalho|assedio moral contra servidores/,
+      /direito a desconexao/,
+      /(amplia|regulament|direito a|garant|assegur)\w*\b.{0,30}\blicenca[- ](maternidade|paternidade)/,
+      /intervalo de dez minutos|remuneracao do intervalo|ampliacao do tempo de repouso/,
+      /(institui|concede|reconhec|garant|assegur|estabelece)\w*\b.{0,40}\b(adicional de (insalubridade|periculosidade)|natureza perigosa)|direito ao adicional de (insalubridade|periculosidade)/,
+      /rescisao indireta|sofrimento psicologico excessivo/,
+      /(garant|assegur|resguard)\w*\b.{0,30}\bdireitos( trabalhistas)?\b.{0,30}\b(trabalhador|entregador|estagiari|preposto)|(garant|assegur|resguard)\w*\b.{0,40}\bdireitos trabalhistas/,
+      /obrigatoriedade da participacao dos trabalhadores nos lucros|intervencao sindical nas dispensas coletivas|assistencia do sindicato nas rescisoes/,
+      /depositos do fgts durante|vale-transporte apenas pelo empregador|aviso-previo indenizado integra/,
+      /(protecao|seguranca|saude( integral)?|valorizacao)\b.{0,30}\b(d[oa]s?|a[os]s?) (trabalhador|empregad|entregador)/,
+      /trabalhador\w* (domestic|do cuidado|de cuidados)|calor extremo aos trabalhadores|trabalhadores expostos ao sol|direitos da mulher trabalhadora/,
+      /proib\w*\b.{0,30}\bperguntas\b.{0,200}\bentrevistas de emprego/,
+    ],
+  },
   {
     id: 'desigualdade', sinal: 1, rotulo: 'Reduz desigualdade e amplia direitos',
     descricao: 'Cotas e ações afirmativas, combate ao racismo e à discriminação, renda e combate à fome, moradia popular, população de rua, proteção às mulheres, inclusão de pessoas com deficiência, direitos de pessoas LGBT+.',

@@ -169,3 +169,14 @@ test('laicidade: oficializar uma fé tira pontos, inclusive em simbólicas', asy
   assert.equal(impactoDe('Declara patrimônio imaterial a Festa do Senhor Bom Jesus de Iguape.', 'simbolica'), null);
   assert.equal(impactoDe('Institui o Programa de Combate à Exploração Sexual Infantil nas escolas estaduais.', 'seguranca'), null);
 });
+
+test('direitos trabalhistas: lado da proposta', async () => {
+  const { impactoDe } = await import('../scripts/lib/impacto.js');
+  assert.equal(impactoDe('Estabelece o fim da escala de trabalho 6x1 dos trabalhadores terceirizados.', 'trabalho'), 'trabalho_amplia');
+  assert.equal(impactoDe('Altera a CLT para garantir a estabilidade da gestante contratada como aprendiz.', 'trabalho'), 'trabalho_amplia');
+  assert.equal(impactoDe('Autoriza o trabalho em feriados nas atividades do comércio em geral, independentemente de existência de permissão em convenção coletiva.', 'trabalho'), 'trabalho_restringe');
+  assert.equal(impactoDe('Dispõe sobre a possibilidade de se pactuar desconto salarial por saldo negativo em banco de horas.', 'trabalho'), 'trabalho_restringe');
+  assert.equal(impactoDe('Susta a Portaria que institui o Programa de Equidade e Valorização das Trabalhadoras no SUS.', 'saude'), 'trabalho_restringe');
+  // não confundir
+  assert.equal(impactoDe('Permite movimentar o FGTS para custear o tratamento de saúde de animal de estimação do trabalhador.', 'saude'), null);
+});
