@@ -1,0 +1,32 @@
+
+=== Câmara dos Deputados ===
+Câmara: lista de deputados em exercício
+  513 deputados
+Câmara: histórico de exercício
+Câmara: sessões e presenças
+  420 sessões deliberativas
+Câmara: proposições
+  230672 proposições de primeira autoria
+Câmara: cota parlamentar (CEAP)
+Câmara: pessoal e verba de gabinete (SP)
+  ok: 70 de SP, 513 no comparativo
+
+=== Senado Federal ===
+Senado: senadores em exercício
+  81 senadores
+Senado: votações nominais
+  códigos de voto: {"votou ()":11278,"ap (atividade parlamentar)":2319,"ls (licenca saude)":838,"sim ()":9082,"mis (missao da casa no pais/exterior)":612,"p-nrv (presente – nao registrou voto)":4839,"abstencao ()":27,"presidente (art. 51 risf) ()":107,"nao ()":2445,"lp (licenca particular)":119,"ncom (nao compareceu)":152,"na (dispositivo nao citado)":24,"lap (licenca paternidade ou ao adotante)":1}
+Senado: proposições de autoria
+Senado: cota parlamentar (CEAPS)
+Senado: pessoal de gabinete (SP)
+  ok: 3 de SP, 81 no comparativo
+
+=== Assembleia Legislativa de SP ===
+ALESP: deputados
+  ! falhou (opcional): https://www.al.sp.gov.br/repositorioDados/deputados/deputados.xml — HTTP 503
+  0 deputados estaduais em exercício
+  ERRO em alesp: deputados.xml sem registros
+Tipos não mapeados (top 25): [["DOC (Ofício da Primeira-Secretaria)",2906],["DOC (Alteração em Frente Parlamentar Registrada na Câmara dos Deputados)",339],["PROC (Processo Interno)",150],["DOC (Alteração em Grupo Parlamentar Instalado na Câmara dos Deputados)",87],["DOC (Instalação de Grupo Parlamentar na Câmara dos Deputados)",83],["OF (Ofício)",43],["DOC (Adesão a Bloco Parlamentar)",13],["DOC (Desligamento de Bloco Parlamentar)",12],["DOC (Desligamento de Frente Parlamentar Registrada)",9],["PFS (Proposta de Fiscalização e Controle)",9],["DOC (Constituição de Bloco Parlamentar)",8],["DOC (Documento)",8],["PET (Petição)",7],["ATA (Ata)",6],["ERR (Errata)",4],["PCE (Petição)",4],["PIN (Proposta de Instrução Normativa)",3],["OFS (Ofício)",2],["MAN (Manifestação do Relator)",1],["DOC (Desligamento de Grupo Parlamentar Registrado)",1],["APJ (Anteprojeto)",1],["DOC (Ofício de Órgão da Câmara dos Deputados)",1],["CON (Consulta)",1],["ADD (Adendo)",1],["CON (CONSULTA (SF))",1]]
+
+Pronto: 167 parlamentares de SP (0 sem score). Saída em public/data/
+Fotos: 167 ok, 0 sem foto
